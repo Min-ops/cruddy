@@ -79,7 +79,7 @@ class CRUD(object):
         if not operation:
             response['status'] = 'error'
             response['message'] = 'NoOperationSupplied'
-        elif operation not in self._supported_operations:
+        elif operation not in self._supported_ops:
             response['status'] = 'error'
             response['message'] = 'UnsupportedOperation: {}'.format(operation)
         elif operation == 'list':

@@ -8,7 +8,7 @@ requires = [
 
 setup(
     name='cruddy',
-    version='0.1.0',
+    version='0.1.1',
     description='A CRUD wrapper class for AWS Lambda',
     long_description=open('README.md').read(),
     author='Mitch Garnaat',
