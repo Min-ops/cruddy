@@ -46,7 +46,7 @@ class CRUD(object):
     def _create(self, item, response):
         item['id'] = str(uuid.uuid4())
         item['created_at'] = int(time.time() * 1000)
-        item['modified_at'] = item['created']
+        item['modified_at'] = item['created_at']
         if self._check_required(item, response):
             self._table.put_item(Item=item)
             response['data'] = item
