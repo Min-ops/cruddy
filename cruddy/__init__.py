@@ -19,6 +19,7 @@ import decimal
 import base64
 
 import boto3
+from botocore.exceptions import ClientError
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -123,9 +124,16 @@ class CRUD(object):
     def _call_ddb_method(self, method, kwargs, response):
         try:
             response['raw_response'] = method(**kwargs)
+        except ClientError as e:
+            LOG.debug(e)
+            response['status'] = 'error'
+            response['error_message'] = e.response['Error'].get('Message')
+            response['error_code'] = e.response['Error'].get('Code')
+            response['error_type'] = e.response['Error'].get('Type')
         except Exception as e:
             response['status'] = 'error'
             response['error_type'] = e.__class__.__name__
+            response['error_code'] = None
             response['error_message'] = str(e)
 
     def _new_response(self):
