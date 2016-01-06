@@ -67,6 +67,29 @@ following attributes.
 handler is in ``debug`` mode.
 * **is_successful** a simple short-cut, equivalent it ``status == 'success'``
 
+You can convert the CRUDResponse object into a standard Python dictionary using
+the ``flatten`` method
+
+```
+>>> response = crud.create(...)
+>>> response.flatten()
+{'data': {'bar': 'baz',
+  'created_at': 1452109758363,
+  'name': 'the dude',
+  'email': 'the@dude.com',
+  'twitter': 'thedude',
+  'id': 'a6ac0fd7-cdde-4170-a1a9-30e139c44897',
+  'modified_at': 1452109758363},
+ 'error_code': None,
+ 'error_message': None,
+ 'error_type': None,
+ 'metadata': {'HTTPStatusCode': 200,
+  'RequestId': 'LBBFLMIAVOKR8LOTK7SRGFO4Q3VV4KQNSO5AEMVJF66Q9ASUAAJG'},
+ 'raw_response': None,
+ 'status': 'success'}
+ >>>
+ ```
+ 
 ## CRUD operations
 
 The CRUD object supports the following operations.  Note that depending on the

@@ -17,6 +17,7 @@ import uuid
 import time
 import decimal
 import base64
+import copy
 
 import boto3
 from botocore.exceptions import ClientError
@@ -40,6 +41,13 @@ class CRUDResponse(object):
     @property
     def is_successful(self):
         return self.status == 'success'
+
+    def flatten(self):
+        flat = copy.deepcopy(self.__dict__)
+        for k in flat:
+            if k.startswith('_'):
+                del flat[k]
+        return flat
 
     def prepare(self):
         if self.status == 'success':
