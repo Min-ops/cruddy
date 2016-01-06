@@ -73,8 +73,7 @@ the ``flatten`` method
 ```
 >>> response = crud.create(...)
 >>> response.flatten()
-{'data': {'bar': 'baz',
-  'created_at': 1452109758363,
+{'data': {'created_at': 1452109758363,
   'name': 'the dude',
   'email': 'the@dude.com',
   'twitter': 'thedude',
