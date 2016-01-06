@@ -16,6 +16,9 @@ import logging
 import uuid
 import time
 import decimal
+import base64
+
+import boto3
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -23,13 +26,41 @@ LOG.setLevel(logging.INFO)
 
 class CRUD(object):
 
-    supported_ops = ["create", "update", "get", "delete", "list"]
+    SupportedOps = ["create", "update", "get", "delete", "list"]
 
-    def __init__(self, dynamodb_table, required_attributes,
-                 supported_ops=None):
-        self._table = dynamodb_table
-        self._required = set(required_attributes)
-        self._supported_ops = supported_ops or self.supported_ops
+    def __init__(self, **kwargs):
+        """
+        Create a new CRUD handler.  The CRUD handler accepts the following
+        parameters:
+
+        * table_name - name of the backing DynamoDB table (required)
+        * profile_name - name of the AWS credential profile to use when
+          creating the boto3 Session
+        * region_name - name of the AWS region to use when creating the
+          boto3 Session
+        * required_attributes - a list of attribute names that the item is
+          required to have or else an error will be returned
+        * supported_ops - a list of operations supported by the CRUD handler
+          (choices are list, get, create, update, delete)
+        * encrypted_attributes - a list of tuples where the first item in the
+          tuple is the name of the attribute that should be encrypted and the
+          second item in the tuple is the KMS master key ID to use for
+          encrypting/decrypting the value.
+        """
+        table_name = kwargs['table_name']
+        profile_name = kwargs.get('profile_name')
+        region_name = kwargs.get('region_name')
+        self.required_attributes = kwargs.get('required_attributes', list())
+        self.supported_ops = kwargs.get('supported_ops', self.SupportedOps)
+        self.encrypted_attributes = kwargs.get('encrypted_attributes', list())
+        session = boto3.Session(profile_name=profile_name,
+                                region_name=region_name)
+        ddb_resource = session.resource('dynamodb')
+        self.table = ddb_resource.Table(table_name)
+        if self.encrypted_attributes:
+            self._kms_client = session.client('kms')
+        else:
+            self._kms_client = None
 
     # Because the Boto3 DynamoDB client turns all numeric types into Decimals
     # (which is actually the right thing to do) we need to convert those
@@ -52,67 +83,114 @@ class CRUD(object):
         else:
             return obj
 
+    def _encrypt(self, item):
+        for encrypted_attr, master_key_id in self.encrypted_attributes:
+            response = self._kms_client.encrypt(
+                KeyId=master_key_id,
+                Plaintext=item[encrypted_attr])
+            blob = response['CiphertextBlob']
+            item[encrypted_attr] = blob
+
+    def _decrypt(self, item):
+        for encrypted_attr, master_key_id in self.encrypted_attributes:
+            response = self._kms_client.decrypt(
+                CiphertextBlob=item[encrypted_attr])
+            item[encrypted_attr] = response['Plaintext']
+
     def _check_required(self, item, response):
-        missing = self._required - set(item.keys())
+        missing = set(self.required_attributes) - set(item.keys())
         if len(missing) > 0:
             response['status'] = 'error'
+            response['error_type'] = 'MissingRequiredAttributes'
             response['message'] = 'Missing required attributes: {}'.format(
                 list(missing))
             return False
         return True
 
-    def _list(self, item, response):
-        items = self._table.scan()
-        response['data'] = self._replace_decimals(items['Items'])
-
-    def _create(self, item, response):
-        item['id'] = str(uuid.uuid4())
-        item['created_at'] = int(time.time() * 1000)
-        item['modified_at'] = item['created_at']
-        if self._check_required(item, response):
-            self._table.put_item(Item=item)
-            response['data'] = item
-
-    def _update(self, item, response):
-        item['modified_at'] = int(time.time() * 1000)
-        if self._check_required(item, response):
-            self._table.put_item(Item=item)
-            response['data'] = item
-
-    def _delete(self, item, response):
-        id = item.get('id')
-        if id is None:
+    def _check_supported_op(self, op_name, response):
+        if op_name not in self.supported_ops:
             response['status'] = 'error'
-            response['message'] = 'delete requires an id'
-        else:
-            response['data'] = self._table.delete_item(Key={'id': id})
+            response['error_type'] = 'UnsupportedOperation'
+            response['message'] = 'unsupported operation: {}'.format(op_name)
+            return False
+        return True
 
-    def _get(self, item, response):
-        id = item.get('id')
-        if id is None:
+    def _call_ddb_method(self, method, kwargs, response):
+        try:
+            response['raw_response'] = method(**kwargs)
+        except Exception as e:
             response['status'] = 'error'
-            response['message'] = 'get requires an id'
-        else:
-            item = self._table.get_item(Key={'id': id})['Item']
-            response['data'] = self._replace_decimals(item)
+            response['error_type'] = e.__class__.__name__
+            response['error_message'] = str(e)
 
-    def handler(self, item, operation):
-        response = {'status': 'success'}
-        operation = operation.lower()
-        if not operation:
-            response['status'] = 'error'
-            response['message'] = 'NoOperationSupplied'
-        elif operation not in self._supported_ops:
-            response['status'] = 'error'
-            response['message'] = 'UnsupportedOperation: {}'.format(operation)
-        elif operation == 'list':
-            self._list(item, response)
-        elif operation == 'get':
-            self._get(item, response)
-        elif operation == 'create':
-            self._create(item, response)
-        elif operation == 'update':
-            self._update(item, response)
-        elif operation == 'delete':
-            self._delete(item, response)
+    def _new_response(self):
+        return dict(status='success', data=None)
+
+    def _prepare_response(self, response):
+        if response['status'] == 'success':
+            if 'raw_response' in response:
+                md = response['raw_response']['ResponseMetadata']
+                response['response_metadata'] = md
+                del response['raw_response']
         return response
+
+    def list(self):
+        response = self._new_response()
+        if self._check_supported_op('list', response):
+            self._call_ddb_method(self.table.scan, {}, response)
+            if response['status'] == 'success':
+                response['data'] = self._replace_decimals(
+                    response['raw_response']['Items'])
+        return self._prepare_response(response)
+
+    def get(self, id):
+        response = self._new_response()
+        if self._check_supported_op('list', response):
+            if id is None:
+                response['status'] = 'error'
+                response['error_type'] = 'IDRequired'
+                response['message'] = 'get requires an id'
+            else:
+                params = {'Key': {'id': id},
+                          'ConsistentRead': True}
+                self._call_ddb_method(self.table.get_item, params, response)
+                if response['status'] == 'success':
+                    item = response['raw_response']['Item']
+                    response['data'] = self._replace_decimals(item)
+        return self._prepare_response(response)
+
+    def create(self, item):
+        response = self._new_response()
+        if self._check_supported_op('create', response):
+            item['id'] = str(uuid.uuid4())
+            item['created_at'] = int(time.time() * 1000)
+            item['modified_at'] = item['created_at']
+            if self._check_required(item, response):
+                params = {'Item': item}
+                self._call_ddb_method(self.table.put_item, params, response)
+                if response['status'] == 'success':
+                    response['data'] = item
+        return self._prepare_response(response)
+
+    def update(self, item):
+        response = self._new_response()
+        if self._check_supported_op('update', response):
+            item['modified_at'] = int(time.time() * 1000)
+            if self._check_required(item, response):
+                params = {'Item': item}
+                self._call_ddb_method(self.table.put_item, params, response)
+                if response['status'] == 'success':
+                    response['data'] = item
+        return self._prepare_response(response)
+
+    def delete(self, id):
+        response = self._new_response()
+        if self._check_supported_op('delete', response):
+            if id is None:
+                response['status'] = 'error'
+                response['error_type'] = 'IDRequired'
+                response['message'] = 'delete requires an id'
+            else:
+                params = {'Key': {'id': id}}
+                self._call_ddb_method(self.table.delete_item, params, response)
+        return self._prepare_response(response)
