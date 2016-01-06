@@ -60,12 +60,12 @@ following attributes.
 * **status** is the status of the response and is either ``success`` or
 ``error``
 * **metadata** is metadata from the underlying DynamoDB API call
-* **error_type** will be the type of error, if ``status != 'success``
-* **error_code** will be the code of error, if ``status != 'success``
-* **error_type** will be the full error message, if ``status != 'success``
+* **error_type** will be the type of error, if ``status != 'success'``
+* **error_code** will be the code of error, if ``status != 'success'``
+* **error_type** will be the full error message, if ``status != 'success'``
 * **raw_response** will contain the full response from DynamoDB if the CRUD
 handler is in ``debug`` mode.
-* **is_successful** a simple short-cut, equivalent it ``status == 'success'``
+* **is_successful** a simple short-cut, equivalent to ``status == 'success'``
 
 You can convert the CRUDResponse object into a standard Python dictionary using
 the ``flatten`` method
