@@ -15,6 +15,7 @@
 import logging
 import uuid
 import time
+import decimal
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -30,6 +31,27 @@ class CRUD(object):
         self._required = set(required_attributes)
         self._supported_ops = supported_ops or self.supported_ops
 
+    # Because the Boto3 DynamoDB client turns all numeric types into Decimals
+    # (which is actually the right thing to do) we need to convert those
+    # Decimal values back into integers or floats before serializing to JSON.
+
+    def _replace_decimals(self, obj):
+        if isinstance(obj, list):
+            for i in xrange(len(obj)):
+                obj[i] = self._replace_decimals(obj[i])
+            return obj
+        elif isinstance(obj, dict):
+            for k in obj.iterkeys():
+                obj[k] = self._replace_decimals(obj[k])
+            return obj
+        elif isinstance(obj, decimal.Decimal):
+            if obj % 1 == 0:
+                return int(obj)
+            else:
+                return float(obj)
+        else:
+            return obj
+
     def _check_required(self, item, response):
         missing = self._required - set(item.keys())
         if len(missing) > 0:
@@ -41,7 +63,7 @@ class CRUD(object):
 
     def _list(self, item, response):
         items = self._table.scan()
-        response['data'] = items['Items']
+        response['data'] = self._replace_decimals(items['Items'])
 
     def _create(self, item, response):
         item['id'] = str(uuid.uuid4())
@@ -71,7 +93,8 @@ class CRUD(object):
             response['status'] = 'error'
             response['message'] = 'get requires an id'
         else:
-            response['data'] = self._table.get_item(Key={'id': id})
+            item = self._table.get_item(Key={'id': id})
+            response['data'] = self._replace_decimals(item)
 
     def handler(self, item, operation):
         response = {'status': 'success'}
