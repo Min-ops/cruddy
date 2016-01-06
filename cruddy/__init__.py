@@ -45,7 +45,9 @@ class CRUD(object):
         * encrypted_attributes - a list of tuples where the first item in the
           tuple is the name of the attribute that should be encrypted and the
           second item in the tuple is the KMS master key ID to use for
-          encrypting/decrypting the value.
+          encrypting/decrypting the value
+        * debug - if not False this will cause the raw_response to be left
+          in the response dictionary
         """
         table_name = kwargs['table_name']
         profile_name = kwargs.get('profile_name')
@@ -57,6 +59,7 @@ class CRUD(object):
                                 region_name=region_name)
         ddb_resource = session.resource('dynamodb')
         self.table = ddb_resource.Table(table_name)
+        self.debug = kwargs.get('debug', False)
         if self.encrypted_attributes:
             self._kms_client = session.client('kms')
         else:
@@ -113,7 +116,7 @@ class CRUD(object):
         if op_name not in self.supported_ops:
             response['status'] = 'error'
             response['error_type'] = 'UnsupportedOperation'
-            response['message'] = 'unsupported operation: {}'.format(op_name)
+            response['message'] = 'Unsupported operation: {}'.format(op_name)
             return False
         return True
 
@@ -131,10 +134,14 @@ class CRUD(object):
     def _prepare_response(self, response):
         if response['status'] == 'success':
             if 'raw_response' in response:
-                md = response['raw_response']['ResponseMetadata']
-                response['response_metadata'] = md
-                del response['raw_response']
+                if not self._debug:
+                    md = response['raw_response']['ResponseMetadata']
+                    response['response_metadata'] = md
+                    del response['raw_response']
         return response
+
+    def _get_ts(self):
+        return int(time.time() * 1000)
 
     def list(self):
         response = self._new_response()
@@ -151,7 +158,7 @@ class CRUD(object):
             if id is None:
                 response['status'] = 'error'
                 response['error_type'] = 'IDRequired'
-                response['message'] = 'get requires an id'
+                response['message'] = 'Get requires an id'
             else:
                 params = {'Key': {'id': id},
                           'ConsistentRead': True}
@@ -167,7 +174,7 @@ class CRUD(object):
         response = self._new_response()
         if self._check_supported_op('create', response):
             item['id'] = str(uuid.uuid4())
-            item['created_at'] = int(time.time() * 1000)
+            item['created_at'] = self._get_ts()
             item['modified_at'] = item['created_at']
             if self._check_required(item, response):
                 self._encrypt(item)
@@ -180,7 +187,7 @@ class CRUD(object):
     def update(self, item):
         response = self._new_response()
         if self._check_supported_op('update', response):
-            item['modified_at'] = int(time.time() * 1000)
+            item['modified_at'] = self._get_ts()
             if self._check_required(item, response):
                 self._encrypt(item)
                 params = {'Item': item}
@@ -195,7 +202,7 @@ class CRUD(object):
             if id is None:
                 response['status'] = 'error'
                 response['error_type'] = 'IDRequired'
-                response['message'] = 'delete requires an id'
+                response['message'] = 'Delete requires an id'
             else:
                 params = {'Key': {'id': id}}
                 self._call_ddb_method(self.table.delete_item, params, response)
@@ -214,4 +221,3 @@ class CRUD(object):
         elif operation == 'delete':
             response = self.delete(item['id'])
         return response
-    

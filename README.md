@@ -26,6 +26,8 @@ the handler for your application.  The full list of parameters are:
   the name of the attribute that should be encrypted and the second
   item in the tuple is the KMS master key ID to use for
   encrypting/decrypting the value.
+* debug - if not False this will cause the raw_response to be left
+  in the response dictionary
 
 An easy way to configure your CRUD handler is to gather all of the parameters
 together in a dictionary and then pass that dictionary to the class
@@ -79,6 +81,10 @@ If there was an error, the response will also contain an ``error_type``
 attribute which will be the class name of the exception raised.  In addition,
 the response will contain an ``error_message`` attribute which will contain a
 description of the error.
+
+If there was an error or if the CRUD handler was created with ``debug=True``
+then there will be a ``raw_response`` attribute in the response which will
+contain the complete response from DynamoDB.
 
 ## CRUD operations
 
