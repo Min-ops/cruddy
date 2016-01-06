@@ -53,38 +53,19 @@ item = {'name': 'the dude', 'email': 'the@dude.com', 'twitter': 'thedude'}
 response = crud.create(item)
 ```
 
-The response returned from all CRUD operations looks like this:
+The response returned from all CRUD operations is a Python object with the
+following attributes.
 
-```
-{'data': {'created_at': 1452095009485,
-          'modified_at': 1452095073532,
-          'id': '38c64015-b906-46d0-8364-f66d42bec428',
-          'name': 'the dude',
-          'email': 'the@dude.com',
-          'twitter': 'thedude'},
- 'status': 'success',
- 'response_metadata': {'HTTPStatusCode': 200,
-                       'RequestId': 'PIFQ56D78GRRM7F992INCGS1PNVV4KQNSO5AE'}
-}
-```
-
-The ``status`` attribute will always be either ``success`` or ``error``.
-
-The``response_metadata`` attribute will always contain information about the
-underlying call to DynamoDB that was made to satisfy the CRUD operation.
-
-If the call is successful, ``data`` will be the data returned by the call
-(e.g. an individual item for a ``get`` operation or a list of items for a
-``list`` operation).
-
-If there was an error, the response will also contain an ``error_type``
-attribute which will be the class name of the exception raised.  In addition,
-the response will contain an ``error_message`` attribute which will contain a
-description of the error.
-
-If there was an error or if the CRUD handler was created with ``debug=True``
-then there will be a ``raw_response`` attribute in the response which will
-contain the complete response from DynamoDB.
+* **data** is the actual data returned from the CRUD operation (if successful)
+* **status** is the status of the response and is either ``success`` or
+``error``
+* **metadata** is metadata from the underlying DynamoDB API call
+* **error_type** will be the type of error, if ``status != 'success``
+* **error_code** will be the code of error, if ``status != 'success``
+* **error_type** will be the full error message, if ``status != 'success``
+* **raw_response** will contain the full response from DynamoDB if the CRUD
+handler is in ``debug`` mode.
+* **is_successful** a simple short-cut, equivalent it ``status == 'success'``
 
 ## CRUD operations
 
