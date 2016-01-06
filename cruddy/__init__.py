@@ -53,14 +53,20 @@ class CRUD(object):
         table_name = kwargs['table_name']
         profile_name = kwargs.get('profile_name')
         region_name = kwargs.get('region_name')
+        placebo = kwargs.get('placebo')
+        placebo_dir = kwargs.get('placebo_dir')
         self.required_attributes = kwargs.get('required_attributes', list())
         self.supported_ops = kwargs.get('supported_ops', self.SupportedOps)
         self.encrypted_attributes = kwargs.get('encrypted_attributes', list())
         session = boto3.Session(profile_name=profile_name,
                                 region_name=region_name)
+        if placebo and placebo_dir:
+            self.pill = placebo.attach(session, placebo_dir, debug=True)
+        else:
+            self.pill = None
         ddb_resource = session.resource('dynamodb')
         self.table = ddb_resource.Table(table_name)
-        self.debug = kwargs.get('debug', False)
+        self._debug = kwargs.get('debug', False)
         if self.encrypted_attributes:
             self._kms_client = session.client('kms')
         else:

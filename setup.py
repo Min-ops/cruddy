@@ -10,14 +10,14 @@ requires = [
 setup(
     name='cruddy',
     version='0.1.5',
-    description='A CRUD wrapper class for AWS Lambda',
+    description='A CRUD wrapper class for Amazon DynamoDB',
     long_description=open('README.md').read(),
     author='Mitch Garnaat',
     author_email='mitch@cloudnative.io',
     url='https://github.com/cloudnative/cruddy',
     packages=find_packages(exclude=['tests*']),
     install_requires=requires,
-    license=open("LICENSE").read(),
+    license="Apache License 2.0",
     classifiers=(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
