@@ -25,6 +25,31 @@ LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
 
+class CRUDResponse(object):
+
+    def __init__(self, debug=False):
+        self._debug = debug
+        self.status = 'success'
+        self.data = None
+        self.error_type = None
+        self.error_code = None
+        self.error_message = None
+        self.raw_response = None
+        self.metadata = None
+
+    @property
+    def is_successful(self):
+        return self.status == 'success'
+
+    def prepare(self):
+        if self.status == 'success':
+            if self.raw_response:
+                if not self._debug:
+                    md = self.raw_response['ResponseMetadata']
+                    self.metadata = md
+                    self.raw_response = None
+
+
 class CRUD(object):
 
     SupportedOps = ["create", "update", "get", "delete", "list"]
@@ -112,47 +137,39 @@ class CRUD(object):
     def _check_required(self, item, response):
         missing = set(self.required_attributes) - set(item.keys())
         if len(missing) > 0:
-            response['status'] = 'error'
-            response['error_type'] = 'MissingRequiredAttributes'
-            response['message'] = 'Missing required attributes: {}'.format(
+            response.status = 'error'
+            response.error_type = 'MissingRequiredAttributes'
+            response.error_message = 'Missing required attributes: {}'.format(
                 list(missing))
             return False
         return True
 
     def _check_supported_op(self, op_name, response):
         if op_name not in self.supported_ops:
-            response['status'] = 'error'
-            response['error_type'] = 'UnsupportedOperation'
-            response['message'] = 'Unsupported operation: {}'.format(op_name)
+            response.status = 'error'
+            response.error_type = 'UnsupportedOperation'
+            response.error_message = 'Unsupported operation: {}'.format(
+                op_name)
             return False
         return True
 
     def _call_ddb_method(self, method, kwargs, response):
         try:
-            response['raw_response'] = method(**kwargs)
+            response.raw_response = method(**kwargs)
         except ClientError as e:
             LOG.debug(e)
-            response['status'] = 'error'
-            response['error_message'] = e.response['Error'].get('Message')
-            response['error_code'] = e.response['Error'].get('Code')
-            response['error_type'] = e.response['Error'].get('Type')
+            response.status = 'error'
+            response.error_message = e.response['Error'].get('Message')
+            response.error_code = e.response['Error'].get('Code')
+            response.error_type = e.response['Error'].get('Type')
         except Exception as e:
-            response['status'] = 'error'
-            response['error_type'] = e.__class__.__name__
-            response['error_code'] = None
-            response['error_message'] = str(e)
+            response.status = 'error'
+            response.error_type = e.__class__.__name__
+            response.error_code = None
+            response.error_message = str(e)
 
     def _new_response(self):
-        return dict(status='success', data=None)
-
-    def _prepare_response(self, response):
-        if response['status'] == 'success':
-            if 'raw_response' in response:
-                if not self._debug:
-                    md = response['raw_response']['ResponseMetadata']
-                    response['response_metadata'] = md
-                    del response['raw_response']
-        return response
+        return CRUDResponse(self._debug)
 
     def _get_ts(self):
         return int(time.time() * 1000)
@@ -161,28 +178,30 @@ class CRUD(object):
         response = self._new_response()
         if self._check_supported_op('list', response):
             self._call_ddb_method(self.table.scan, {}, response)
-            if response['status'] == 'success':
-                response['data'] = self._replace_decimals(
-                    response['raw_response']['Items'])
-        return self._prepare_response(response)
+            if response.status == 'success':
+                response.data = self._replace_decimals(
+                    response.raw_response['Items'])
+        response.prepare()
+        return response
 
     def get(self, id, decrypt=False):
         response = self._new_response()
         if self._check_supported_op('list', response):
             if id is None:
-                response['status'] = 'error'
-                response['error_type'] = 'IDRequired'
-                response['message'] = 'Get requires an id'
+                response.status = 'error'
+                response.error_type = 'IDRequired'
+                response.error_message = 'Get requires an id'
             else:
                 params = {'Key': {'id': id},
                           'ConsistentRead': True}
                 self._call_ddb_method(self.table.get_item, params, response)
-                if response['status'] == 'success':
-                    item = response['raw_response']['Item']
+                if response.status == 'success':
+                    item = response.raw_response['Item']
                     if decrypt:
                         self._decrypt(item)
-                    response['data'] = self._replace_decimals(item)
-        return self._prepare_response(response)
+                    response.data = self._replace_decimals(item)
+        response.prepare()
+        return response
 
     def create(self, item):
         response = self._new_response()
@@ -194,9 +213,10 @@ class CRUD(object):
                 self._encrypt(item)
                 params = {'Item': item}
                 self._call_ddb_method(self.table.put_item, params, response)
-                if response['status'] == 'success':
-                    response['data'] = item
-        return self._prepare_response(response)
+                if response.status == 'success':
+                    response.data = item
+        response.prepare()
+        return response
 
     def update(self, item):
         response = self._new_response()
@@ -206,21 +226,23 @@ class CRUD(object):
                 self._encrypt(item)
                 params = {'Item': item}
                 self._call_ddb_method(self.table.put_item, params, response)
-                if response['status'] == 'success':
-                    response['data'] = item
-        return self._prepare_response(response)
+                if response.status == 'success':
+                    response.data = item
+        response.prepare()
+        return response
 
     def delete(self, id):
         response = self._new_response()
         if self._check_supported_op('delete', response):
             if id is None:
-                response['status'] = 'error'
-                response['error_type'] = 'IDRequired'
-                response['message'] = 'Delete requires an id'
+                response.status = 'error'
+                response.error_type = 'IDRequired'
+                response.error_message = 'Delete requires an id'
             else:
                 params = {'Key': {'id': id}}
                 self._call_ddb_method(self.table.delete_item, params, response)
-        return self._prepare_response(response)
+        response.prepare()
+        return response
 
     def handler(self, item, operation):
         operation = operation.lower()
