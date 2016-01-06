@@ -85,17 +85,19 @@ class CRUD(object):
 
     def _encrypt(self, item):
         for encrypted_attr, master_key_id in self.encrypted_attributes:
-            response = self._kms_client.encrypt(
-                KeyId=master_key_id,
-                Plaintext=item[encrypted_attr])
-            blob = response['CiphertextBlob']
-            item[encrypted_attr] = blob
+            if encrypted_attr in item:
+                response = self._kms_client.encrypt(
+                    KeyId=master_key_id,
+                    Plaintext=item[encrypted_attr])
+                blob = response['CiphertextBlob']
+                item[encrypted_attr] = base64.b64encode(blob)
 
     def _decrypt(self, item):
         for encrypted_attr, master_key_id in self.encrypted_attributes:
-            response = self._kms_client.decrypt(
-                CiphertextBlob=item[encrypted_attr])
-            item[encrypted_attr] = response['Plaintext']
+            if encrypted_attr in item:
+                response = self._kms_client.decrypt(
+                    CiphertextBlob=base64.b64decode(item[encrypted_attr]))
+                item[encrypted_attr] = response['Plaintext']
 
     def _check_required(self, item, response):
         missing = set(self.required_attributes) - set(item.keys())
@@ -143,7 +145,7 @@ class CRUD(object):
                     response['raw_response']['Items'])
         return self._prepare_response(response)
 
-    def get(self, id):
+    def get(self, id, decrypt=False):
         response = self._new_response()
         if self._check_supported_op('list', response):
             if id is None:
@@ -156,6 +158,8 @@ class CRUD(object):
                 self._call_ddb_method(self.table.get_item, params, response)
                 if response['status'] == 'success':
                     item = response['raw_response']['Item']
+                    if decrypt:
+                        self._decrypt(item)
                     response['data'] = self._replace_decimals(item)
         return self._prepare_response(response)
 
@@ -166,6 +170,7 @@ class CRUD(object):
             item['created_at'] = int(time.time() * 1000)
             item['modified_at'] = item['created_at']
             if self._check_required(item, response):
+                self._encrypt(item)
                 params = {'Item': item}
                 self._call_ddb_method(self.table.put_item, params, response)
                 if response['status'] == 'success':
@@ -177,6 +182,7 @@ class CRUD(object):
         if self._check_supported_op('update', response):
             item['modified_at'] = int(time.time() * 1000)
             if self._check_required(item, response):
+                self._encrypt(item)
                 params = {'Item': item}
                 self._call_ddb_method(self.table.put_item, params, response)
                 if response['status'] == 'success':

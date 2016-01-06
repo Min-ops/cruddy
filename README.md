@@ -88,11 +88,15 @@ of these methods may return an ``UnsupportedOperation`` error type.
 
 ### list()
 
-Returns a list of items in the database.
+Returns a list of items in the database.  Encrypted attributes are not
+decrypted when listing items.
 
-### get(*id*)
+### get(*id*, *decrypt*)
 
-Returns the item corresponding to ``id``.
+Returns the item corresponding to ``id``.  If the ``decrypt`` param is not
+False (the default) any encrypted attributes in the item will be decrypted
+before the item is returned.  If not, the encrypted attributes will contain the
+encrypted value.
 
 ### create(*item*)
 
