@@ -200,3 +200,18 @@ class CRUD(object):
                 params = {'Key': {'id': id}}
                 self._call_ddb_method(self.table.delete_item, params, response)
         return self._prepare_response(response)
+
+    def handler(self, item, operation):
+        operation = operation.lower()
+        if operation == 'list':
+            response = self.list()
+        elif operation == 'get':
+            response = self.get(item['id'])
+        elif operation == 'create':
+            response = self.create(item)
+        elif operation == 'update':
+            response = self.update(item)
+        elif operation == 'delete':
+            response = self.delete(item['id'])
+        return response
+    
