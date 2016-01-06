@@ -27,7 +27,7 @@ class CRUD(object):
     def __init__(self, dynamodb_table, required_attributes,
                  supported_ops=None):
         self._table = dynamodb_table
-        self._required = required_attributes
+        self._required = set(required_attributes)
         self._supported_ops = supported_ops or self.supported_ops
 
     def _check_required(self, item, response):
