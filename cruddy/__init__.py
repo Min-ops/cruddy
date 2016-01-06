@@ -44,9 +44,12 @@ class CRUDResponse(object):
 
     def flatten(self):
         flat = copy.deepcopy(self.__dict__)
+        hiddens = []
         for k in flat:
             if k.startswith('_'):
-                del flat[k]
+                hiddens.append(k)
+        for k in hiddens:
+            del flat[k]
         return flat
 
     def prepare(self):
