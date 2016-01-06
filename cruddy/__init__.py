@@ -93,7 +93,7 @@ class CRUD(object):
             response['status'] = 'error'
             response['message'] = 'get requires an id'
         else:
-            item = self._table.get_item(Key={'id': id})
+            item = self._table.get_item(Key={'id': id})['Item']
             response['data'] = self._replace_decimals(item)
 
     def handler(self, item, operation):
