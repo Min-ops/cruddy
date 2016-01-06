@@ -91,7 +91,7 @@ of these methods may return an ``UnsupportedOperation`` error type.
 Returns a list of items in the database.  Encrypted attributes are not
 decrypted when listing items.
 
-### get(*id*, *decrypt*)
+### get(*id*, *decrypt=False*)
 
 Returns the item corresponding to ``id``.  If the ``decrypt`` param is not
 False (the default) any encrypted attributes in the item will be decrypted
