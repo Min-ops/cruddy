@@ -120,4 +120,25 @@ Updates the item based on the current values of the dictionary passed in.
 
 Deletes the item corresponding to ``id``.
 
+### query(*query*)
 
+Query isn't really a CRUD operation but it is pretty useful.  Cruddy provides a
+limited but useful interface to query GSI indexes in DynamoDB with the following
+limitations (hopefully some of these will be expanded or eliminated in the
+future.
+
+* The GSI must be configured with a only HASH and not a RANGE.
+* The only operation supported in the query is equality
+
+To use the ``query`` operation you must pass in a query string of this form:
+
+    <attribute_name>=<value>
+
+As stated above, the only operation currently supported is equality (=) but
+other operations will be added over time.  Also, the ``attribute_name`` must be
+an attribute which is configured as the ``HASH`` of a GSI in the DynamoDB
+table.  If all of the above conditions are met, the ``query`` operation will
+return a list (possibly empty) of all items matching the query and the
+``status`` of the response will be ``success``.  Otherwise, the ``status`` will
+be ``error`` and the ``error_type`` and ``error_message`` will provide further
+information about the error.

@@ -20,10 +20,21 @@ import base64
 import copy
 
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
+
+
+class CruddyInvalidKeySchemaException(Exception):
+
+    pass
+
+
+class CruddyInvalidKeyNameException(Exception):
+
+    pass
 
 
 class CRUDResponse(object):
@@ -102,11 +113,30 @@ class CRUD(object):
             self.pill = None
         ddb_resource = session.resource('dynamodb')
         self.table = ddb_resource.Table(table_name)
+        self._indexes = {}
+        self._analyze_table()
         self._debug = kwargs.get('debug', False)
         if self.encrypted_attributes:
             self._kms_client = session.client('kms')
         else:
             self._kms_client = None
+
+    def _analyze_table(self):
+        # First check the Key Schema
+        if len(self.table.key_schema) != 1:
+            msg = 'cruddy does not support RANGE keys'
+            raise CruddyInvalidKeySchemaException(msg)
+        if self.table.key_schema[0]['AttributeName'] != 'id':
+            msg = 'cruddy expects the HASH to be id'
+            raise CruddyInvalidKeyNameException(msg)
+        # Now process any GSI's
+        if self.table.global_secondary_indexes:
+            for gsi in self.table.global_secondary_indexes:
+                # find HASH of GSI, that's all we support for now
+                # if the GSI has a RANGE, we ignore it for now
+                if len(gsi['KeySchema']) == 1:
+                    gsi_hash = gsi['KeySchema'][0]['AttributeName']
+                    self._indexes[gsi_hash] = gsi['IndexName']
 
     # Because the Boto3 DynamoDB client turns all numeric types into Decimals
     # (which is actually the right thing to do) we need to convert those
@@ -184,6 +214,29 @@ class CRUD(object):
 
     def _get_ts(self):
         return int(time.time() * 1000)
+
+    def query(self, query_string):
+        response = self._new_response()
+        if '=' not in query_string:
+            response.status = 'error'
+            response.error_type = 'InvalidQuery'
+            response.error_message = 'Only the = operation is supported'
+        else:
+            key, value = query_string.split('=')
+            if key not in self._indexes:
+                response.status = 'error'
+                response.error_type = 'InvalidQuery'
+                response.error_message = 'Attribute {} is not indexed'.format(
+                    key)
+            else:
+                params = {'KeyConditionExpression': Key(key).eq(value),
+                          'IndexName': self._indexes[key]}
+                self._call_ddb_method(self.table.query, params, response)
+                if response.status == 'success':
+                    response.data = self._replace_decimals(
+                        response.raw_response['Items'])
+        response.prepare()
+        return response
 
     def list(self):
         response = self._new_response()
