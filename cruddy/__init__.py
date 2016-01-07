@@ -207,10 +207,16 @@ class CRUD(object):
                           'ConsistentRead': True}
                 self._call_ddb_method(self.table.get_item, params, response)
                 if response.status == 'success':
-                    item = response.raw_response['Item']
-                    if decrypt:
-                        self._decrypt(item)
-                    response.data = self._replace_decimals(item)
+                    if 'Item' in response.raw_response:
+                        item = response.raw_response['Item']
+                        if decrypt:
+                            self._decrypt(item)
+                        response.data = self._replace_decimals(item)
+                    else:
+                        response.status = 'error'
+                        response.error_type = 'NotFound'
+                        msg = 'Item with id ({}) not found'.format(id)
+                        response.error_message = msg
         response.prepare()
         return response
 
