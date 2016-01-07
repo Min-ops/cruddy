@@ -197,7 +197,7 @@ class CRUD(object):
 
     def get(self, id, decrypt=False):
         response = self._new_response()
-        if self._check_supported_op('list', response):
+        if self._check_supported_op('get', response):
             if id is None:
                 response.status = 'error'
                 response.error_type = 'IDRequired'
