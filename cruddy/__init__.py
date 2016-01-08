@@ -49,6 +49,9 @@ class CRUDResponse(object):
         self.raw_response = None
         self.metadata = None
 
+    def __repr__(self):
+        return repr(self.data)
+
     @property
     def is_successful(self):
         return self.status == 'success'
@@ -326,4 +329,6 @@ class CRUD(object):
             response = self.update(item)
         elif operation == 'delete':
             response = self.delete(item['id'])
+        elif operation == 'query':
+            response = self.query(item)
         return response
