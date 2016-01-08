@@ -77,7 +77,7 @@ class CRUDResponse(object):
 
 class CRUD(object):
 
-    SupportedOps = ["create", "update", "get", "delete", "list"]
+    SupportedOps = ["create", "update", "get", "delete", "list", "query"]
 
     def __init__(self, **kwargs):
         """

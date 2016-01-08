@@ -21,7 +21,7 @@ the handler for your application.  The full list of parameters are:
 * required_attributes - a list of attribute names that the item is required to
   have or else an error will be returned
 * supported_ops - a list of operations supported by the CRUD handler
-  (choices are list, get, create, update, delete)
+  (choices are list, get, create, update, delete, query)
 * encrypted_attributes - a list of tuples where the first item in the tuple is
   the name of the attribute that should be encrypted and the second
   item in the tuple is the KMS master key ID to use for
