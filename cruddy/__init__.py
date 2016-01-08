@@ -50,7 +50,7 @@ class CRUDResponse(object):
         self.metadata = None
 
     def __repr__(self):
-        return repr(self.data)
+        return 'Status: {}'.format(self.status)
 
     @property
     def is_successful(self):
@@ -220,24 +220,25 @@ class CRUD(object):
 
     def query(self, query_string):
         response = self._new_response()
-        if '=' not in query_string:
-            response.status = 'error'
-            response.error_type = 'InvalidQuery'
-            response.error_message = 'Only the = operation is supported'
-        else:
-            key, value = query_string.split('=')
-            if key not in self._indexes:
+        if self._check_supported_op('query', response):
+            if '=' not in query_string:
                 response.status = 'error'
                 response.error_type = 'InvalidQuery'
-                response.error_message = 'Attribute {} is not indexed'.format(
-                    key)
+                response.error_message = 'Only the = operation is supported'
             else:
-                params = {'KeyConditionExpression': Key(key).eq(value),
-                          'IndexName': self._indexes[key]}
-                self._call_ddb_method(self.table.query, params, response)
-                if response.status == 'success':
-                    response.data = self._replace_decimals(
-                        response.raw_response['Items'])
+                key, value = query_string.split('=')
+                if key not in self._indexes:
+                    response.status = 'error'
+                    response.error_type = 'InvalidQuery'
+                    msg = 'Attribute {} is not indexed'.format(key)
+                    response.error_message = msg
+                else:
+                    params = {'KeyConditionExpression': Key(key).eq(value),
+                              'IndexName': self._indexes[key]}
+                    self._call_ddb_method(self.table.query, params, response)
+                    if response.status == 'success':
+                        response.data = self._replace_decimals(
+                            response.raw_response['Items'])
         response.prepare()
         return response
 
@@ -318,17 +319,20 @@ class CRUD(object):
         return response
 
     def handler(self, item, operation):
+        response = self._new_response()
         operation = operation.lower()
-        if operation == 'list':
-            response = self.list()
-        elif operation == 'get':
-            response = self.get(item['id'])
-        elif operation == 'create':
-            response = self.create(item)
-        elif operation == 'update':
-            response = self.update(item)
-        elif operation == 'delete':
-            response = self.delete(item['id'])
-        elif operation == 'query':
-            response = self.query(item)
+        self._check_supported_op(operation, response)
+        if response.status == 'success':
+            if operation == 'list':
+                response = self.list()
+            elif operation == 'get':
+                response = self.get(item['id'])
+            elif operation == 'create':
+                response = self.create(item)
+            elif operation == 'update':
+                response = self.update(item)
+            elif operation == 'delete':
+                response = self.delete(item['id'])
+            elif operation == 'query':
+                response = self.query(item)
         return response
