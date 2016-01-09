@@ -5,29 +5,29 @@
         "Items": [
             {
                 "bar": {
-                    "N": "1452357813721"
+                    "N": "1452361157833"
                 }, 
                 "created_at": {
-                    "N": "1452357813721"
+                    "N": "1452361157833"
                 }, 
                 "modified_at": {
-                    "N": "1452357870011"
+                    "N": "1452361157833"
                 }, 
                 "fie": {
-                    "N": "2"
+                    "N": "1"
                 }, 
                 "foo": {
-                    "S": "0432b860-705a-4956-a3e6-0afd31643f89"
+                    "S": "bcf68424-5257-438b-94c2-50ce357c4196"
                 }, 
                 "id": {
-                    "S": "93c05a2c-6b81-431d-873f-466893d2c9f4"
+                    "S": "53c055fd-57af-482c-b92b-6a4d5fc4effa"
                 }
             }
         ], 
         "ScannedCount": 1, 
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "RequestId": "PK10U62E7V1OUIP22M00A58BP3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+            "RequestId": "64NIH36IGJKKLKU1VEMBDVEIUJVV4KQNSO5AEMVJF66Q9ASUAAJG"
         }
     }
 }

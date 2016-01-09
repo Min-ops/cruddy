@@ -1,13 +1,9 @@
 {
-    "status_code": 400, 
+    "status_code": 200, 
     "data": {
         "ResponseMetadata": {
-            "HTTPStatusCode": 400, 
-            "RequestId": "O635T115R910OJ8VI9B90RU5ORVV4KQNSO5AEMVJF66Q9ASUAAJG"
-        }, 
-        "Error": {
-            "Message": "The provided key element does not match the schema", 
-            "Code": "ValidationException"
+            "HTTPStatusCode": 200, 
+            "RequestId": "URC1HVAR1AS6GA0GPGNJ0374Q7VV4KQNSO5AEMVJF66Q9ASUAAJG"
         }
     }
 }
