@@ -1,0 +1,33 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Count": 1, 
+        "Items": [
+            {
+                "bar": {
+                    "N": "1452361157833"
+                }, 
+                "created_at": {
+                    "N": "1452361157833"
+                }, 
+                "modified_at": {
+                    "N": "1452361157833"
+                }, 
+                "fie": {
+                    "N": "1"
+                }, 
+                "foo": {
+                    "S": "bcf68424-5257-438b-94c2-50ce357c4196"
+                }, 
+                "id": {
+                    "S": "53c055fd-57af-482c-b92b-6a4d5fc4effa"
+                }
+            }
+        ], 
+        "ScannedCount": 1, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "64NIH36IGJKKLKU1VEMBDVEIUJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+        }
+    }
+}

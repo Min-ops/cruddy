@@ -18,6 +18,7 @@ import time
 import decimal
 import base64
 import copy
+import re
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -27,12 +28,12 @@ LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
 
-class CruddyInvalidKeySchemaException(Exception):
+class CruddyKeySchemaException(Exception):
 
     pass
 
 
-class CruddyInvalidKeyNameException(Exception):
+class CruddyKeyNameException(Exception):
 
     pass
 
@@ -75,6 +76,27 @@ class CRUDResponse(object):
                     self.raw_response = None
 
 
+class Tokens(object):
+
+    token_re = re.compile('\<(?P<token>[^\s]+)\>')
+
+    def _get_uuid(self):
+        return str(uuid.uuid4())
+
+    def _get_timestamp(self):
+        return int(time.time() * 1000)
+
+    def check(self, token):
+        if isinstance(token, str):
+            match = self.token_re.match(token)
+            if match:
+                token_method_name = '_get_{}'.format(match.group('token'))
+                token_method = getattr(self, token_method_name, None)
+                if callable(token_method):
+                    token = token_method()
+        return token
+
+
 class CRUD(object):
 
     SupportedOps = ["create", "update", "get", "delete", "list", "query"]
@@ -89,8 +111,8 @@ class CRUD(object):
           creating the boto3 Session
         * region_name - name of the AWS region to use when creating the
           boto3 Session
-        * required_attributes - a list of attribute names that the item is
-          required to have or else an error will be returned
+        * defaults - a dictionary of name/value pairs that will be used to
+          initialize newly created items
         * supported_ops - a list of operations supported by the CRUD handler
           (choices are list, get, create, update, delete)
         * encrypted_attributes - a list of tuples where the first item in the
@@ -105,13 +127,21 @@ class CRUD(object):
         region_name = kwargs.get('region_name')
         placebo = kwargs.get('placebo')
         placebo_dir = kwargs.get('placebo_dir')
-        self.required_attributes = kwargs.get('required_attributes', list())
+        placebo_mode = kwargs.get('placebo_mode', 'record')
+        self.defaults = kwargs.get('defaults', dict())
+        self.defaults['id'] = '<uuid>'
+        self.defaults['created_at'] = '<timestamp>'
         self.supported_ops = kwargs.get('supported_ops', self.SupportedOps)
         self.encrypted_attributes = kwargs.get('encrypted_attributes', list())
+        self._tokens = Tokens()
         session = boto3.Session(profile_name=profile_name,
                                 region_name=region_name)
         if placebo and placebo_dir:
             self.pill = placebo.attach(session, placebo_dir, debug=True)
+            if placebo_mode == 'record':
+                self.pill.record()
+            else:
+                self.pill.playback()
         else:
             self.pill = None
         ddb_resource = session.resource('dynamodb')
@@ -128,10 +158,10 @@ class CRUD(object):
         # First check the Key Schema
         if len(self.table.key_schema) != 1:
             msg = 'cruddy does not support RANGE keys'
-            raise CruddyInvalidKeySchemaException(msg)
+            raise CruddyKeySchemaException(msg)
         if self.table.key_schema[0]['AttributeName'] != 'id':
             msg = 'cruddy expects the HASH to be id'
-            raise CruddyInvalidKeyNameException(msg)
+            raise CruddyKeyNameException(msg)
         # Now process any GSI's
         if self.table.global_secondary_indexes:
             for gsi in self.table.global_secondary_indexes:
@@ -178,15 +208,11 @@ class CRUD(object):
                     CiphertextBlob=base64.b64decode(item[encrypted_attr]))
                 item[encrypted_attr] = response['Plaintext']
 
-    def _check_required(self, item, response):
-        missing = set(self.required_attributes) - set(item.keys())
-        if len(missing) > 0:
-            response.status = 'error'
-            response.error_type = 'MissingRequiredAttributes'
-            response.error_message = 'Missing required attributes: {}'.format(
-                list(missing))
-            return False
-        return True
+    def _handle_defaults(self, item, response):
+        missing = set(self.defaults.keys()) - set(item.keys())
+        for key in missing:
+            value = self._tokens.check(self.defaults[key])
+            item[key] = value
 
     def _check_supported_op(self, op_name, response):
         if op_name not in self.supported_ops:
@@ -214,9 +240,6 @@ class CRUD(object):
 
     def _new_response(self):
         return CRUDResponse(self._debug)
-
-    def _get_ts(self):
-        return int(time.time() * 1000)
 
     def query(self, query_string):
         response = self._new_response()
@@ -280,28 +303,25 @@ class CRUD(object):
     def create(self, item):
         response = self._new_response()
         if self._check_supported_op('create', response):
-            item['id'] = str(uuid.uuid4())
-            item['created_at'] = self._get_ts()
+            self._handle_defaults(item, response)
             item['modified_at'] = item['created_at']
-            if self._check_required(item, response):
-                self._encrypt(item)
-                params = {'Item': item}
-                self._call_ddb_method(self.table.put_item, params, response)
-                if response.status == 'success':
-                    response.data = item
+            self._encrypt(item)
+            params = {'Item': item}
+            self._call_ddb_method(self.table.put_item, params, response)
+            if response.status == 'success':
+                response.data = item
         response.prepare()
         return response
 
     def update(self, item):
         response = self._new_response()
         if self._check_supported_op('update', response):
-            item['modified_at'] = self._get_ts()
-            if self._check_required(item, response):
-                self._encrypt(item)
-                params = {'Item': item}
-                self._call_ddb_method(self.table.put_item, params, response)
-                if response.status == 'success':
-                    response.data = item
+            item['modified_at'] = self._tokens.check('<timestamp>')
+            self._encrypt(item)
+            params = {'Item': item}
+            self._call_ddb_method(self.table.put_item, params, response)
+            if response.status == 'success':
+                response.data = item
         response.prepare()
         return response
 

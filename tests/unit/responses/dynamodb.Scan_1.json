@@ -1,0 +1,12 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Count": 0, 
+        "Items": [], 
+        "ScannedCount": 0, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "8JOE0PI0IGQEPHHKMJTEJJB23VVV4KQNSO5AEMVJF66Q9ASUAAJG"
+        }
+    }
+}
