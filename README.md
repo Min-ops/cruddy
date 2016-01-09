@@ -1,5 +1,7 @@
 # cruddy
 
+[![Circle CI](https://circleci.com/gh/cloudnative/cruddy.svg?style=svg)](https://circleci.com/gh/cloudnative/cruddy)
+
 A simple CRUD wrapper around Amazon DynamoDB.
 
 ## Installation
