@@ -31,6 +31,8 @@ class TestCRUD(unittest.TestCase):
         self.environ['AWS_SHARED_CREDENTIALS_FILE'] = credential_path
         self.data_path = os.path.join(os.path.dirname(__file__), 'responses')
         self.crud = cruddy.CRUD(
+            profile_name='foobar',
+            region_name='us-west-2',
             table_name='mg-test-cruddy',
             defaults={'foo': '<uuid>',
                       'bar': '<timestamp>',
