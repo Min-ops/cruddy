@@ -45,9 +45,9 @@ class TestCRUD(unittest.TestCase):
         pass
 
     def test_cruddy(self):
-        self.cruddy.list()
-        self.cruddy.create({})
-        self.cruddy.list()
-        self.cruddy.update()
-        self.cruddy.delete()
-        self.cruddy.list()
+        self.crud.list()
+        self.crud.create({})
+        self.crud.list()
+        self.crud.update()
+        self.crud.delete()
+        self.crud.list()
