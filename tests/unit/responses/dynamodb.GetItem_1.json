@@ -1,0 +1,29 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Item": {
+            "bar": {
+                "N": "1452357813721"
+            }, 
+            "created_at": {
+                "N": "1452357813721"
+            }, 
+            "modified_at": {
+                "N": "1452357813721"
+            }, 
+            "fie": {
+                "N": "1"
+            }, 
+            "foo": {
+                "S": "0432b860-705a-4956-a3e6-0afd31643f89"
+            }, 
+            "id": {
+                "S": "93c05a2c-6b81-431d-873f-466893d2c9f4"
+            }
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "Q1QKU5U3KGLH2V4R0V6C313JH3VV4KQNSO5AEMVJF66Q9ASUAAJG"
+        }
+    }
+}

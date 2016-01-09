@@ -87,12 +87,13 @@ class Tokens(object):
         return int(time.time() * 1000)
 
     def check(self, token):
-        match = self.token_re.match(token)
-        if match:
-            token_method_name = '_get_{}'.format(match.group('token'))
-            token_method = getattr(self, token_method_name, None)
-            if callable(token_method):
-                token = token_method()
+        if isinstance(token, str):
+            match = self.token_re.match(token)
+            if match:
+                token_method_name = '_get_{}'.format(match.group('token'))
+                token_method = getattr(self, token_method_name, None)
+                if callable(token_method):
+                    token = token_method()
         return token
 
 
@@ -126,6 +127,7 @@ class CRUD(object):
         region_name = kwargs.get('region_name')
         placebo = kwargs.get('placebo')
         placebo_dir = kwargs.get('placebo_dir')
+        placebo_mode = kwargs.get('placebo_mode', 'record')
         self.defaults = kwargs.get('defaults', dict())
         self.defaults['id'] = '<uuid>'
         self.defaults['created_at'] = '<timestamp>'
@@ -136,6 +138,10 @@ class CRUD(object):
                                 region_name=region_name)
         if placebo and placebo_dir:
             self.pill = placebo.attach(session, placebo_dir, debug=True)
+            if placebo_mode == 'record':
+                self.pill.record()
+            else:
+                self.pill.playback()
         else:
             self.pill = None
         ddb_resource = session.resource('dynamodb')
