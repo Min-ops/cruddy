@@ -45,9 +45,21 @@ class TestCRUD(unittest.TestCase):
         pass
 
     def test_cruddy(self):
-        self.crud.list()
+        r = self.crud.list()
+        self.assertEqual(r.status, 'success')
+        self.assertEqual(len(r.data), 0)
         self.crud.create({})
+        self.assertEqual(r.status, 'success')
+        item = r.data
+        self.assertEqual(item['fie'], 1)
         self.crud.list()
-        self.crud.update()
-        self.crud.delete()
+        self.assertEqual(r.status, 'success')
+        self.assertEqual(len(r.data), 1)
+        item['fie'] = 2
+        self.crud.update(item)
+        self.assertEqual(r.status, 'success')
+        self.crud.delete(item['id'])
+        self.assertEqual(r.status, 'success')
         self.crud.list()
+        self.assertEqual(r.status, 'success')
+        self.assertEqual(len(r.data), 0)
