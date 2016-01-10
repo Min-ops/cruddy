@@ -53,7 +53,8 @@ class TestCRUD(unittest.TestCase):
         item = r.data
         self.assertEqual(r.status, 'success')
         self.assertEqual(item['fie'], 1)
-        self.assertEqual(item['created_at'], item['modified_at'])
+        self.assertTrue(isinstance(item['created_at'], int))
+        self.assertTrue(isinstance(item['modified_at'], int))
         r = self.crud.list()
         self.assertEqual(r.status, 'success')
         self.assertEqual(len(r.data), 1)
