@@ -2,7 +2,7 @@
     "status_code": 200, 
     "data": {
         "Table": {
-            "TableArn": "arn:aws:dynamodb:us-west-2:123456789012:table/mg-test-cruddy", 
+            "TableArn": "arn:aws:dynamodb:us-west-2:860421987956:table/mg-test-cruddy", 
             "AttributeDefinitions": [
                 {
                     "AttributeName": "id", 
@@ -14,7 +14,7 @@
                 "WriteCapacityUnits": 1, 
                 "ReadCapacityUnits": 1
             }, 
-            "TableSizeBytes": 0, 
+            "TableSizeBytes": 81, 
             "TableName": "mg-test-cruddy", 
             "TableStatus": "ACTIVE", 
             "KeySchema": [
@@ -23,7 +23,7 @@
                     "AttributeName": "id"
                 }
             ], 
-            "ItemCount": 0, 
+            "ItemCount": 1, 
             "CreationDateTime": {
                 "hour": 10, 
                 "__class__": "datetime", 
@@ -37,7 +37,7 @@
         }, 
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "RequestId": "LAIMOGO08PQK2S7GUGVSRQ13RVVV4KQNSO5AEMVJF66Q9ASUAAJG"
+            "RequestId": "CDJIUJG5ILVOEHU3FKAV82CTFNVV4KQNSO5AEMVJF66Q9ASUAAJG"
         }
     }
 }

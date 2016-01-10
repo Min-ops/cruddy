@@ -34,9 +34,10 @@ class TestCRUD(unittest.TestCase):
             profile_name='foobar',
             region_name='us-west-2',
             table_name='mg-test-cruddy',
-            defaults={'foo': '<uuid>',
-                      'bar': '<timestamp>',
-                      'fie': 1},
+            prototype={'id': '<on-create:uuid>',
+                       'created_at': '<on-create:timestamp>',
+                       'modified_at': '<on-update:timestamp>',
+                       'fie': 1},
             placebo=placebo,
             placebo_mode='playback',
             placebo_dir=self.data_path)
