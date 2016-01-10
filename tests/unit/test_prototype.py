@@ -139,3 +139,22 @@ class TestPrototype(unittest.TestCase):
         self.assertEqual(response.status, 'success')
         self.assertEqual(item['bar'], 2)
         self.assertTrue(isinstance(item['foo'], int))
+
+    def test_create_value_only_changes_on_create(self):
+        response = CRUDResponse()
+        prototype = PrototypeHandler({'foo': '<on-create:timestamp>'})
+        item = {'bar': 2}
+        result = prototype.check(item, 'create', response)
+        self.assertTrue(result)
+        self.assertEqual(response.status, 'success')
+        self.assertEqual(item['bar'], 2)
+        self.assertTrue(isinstance(item['foo'], int))
+        ts = item['foo']
+        response = CRUDResponse()
+        item['bar'] += 1
+        result = prototype.check(item, 'update', response)
+        self.assertTrue(result)
+        self.assertEqual(response.status, 'success')
+        self.assertEqual(item['bar'], 3)
+        self.assertEqual(item['foo'], ts)
+        
