@@ -280,7 +280,7 @@ class CRUD(object):
             elif operation == 'get':
                 if 'id' in kwargs:
                     decrypt = kwargs.get('decrypt', False)
-                    response = self.get(id, decrypt)
+                    response = self.get(kwargs['id'], decrypt)
                 else:
                     response.status == 'error'
                     response.error_type = 'MissingParameter'
