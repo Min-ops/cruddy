@@ -30,32 +30,17 @@ class PrototypeHandler(object):
                 elif cv.operation == 'update' and operation == 'create':
                     item[key] = cv.value
             else:
-                if isinstance(value, type):
-                    # a Python type was provided as the prototype value
-                    # if no value is provided, create a default from the type
-                    if key not in item:
-                        item[key] = value()
-                    else:
-                        # check to see if current value in item is of that type
-                        if not isinstance(item[key], value):
-                            response.status = 'error'
-                            response.error_type = 'InvalidType'
-                            msg = 'Attribute {} must be of type {}'.format(
-                                key, value)
-                            response.error_message = msg
-                            return False
+                # a Python object was provided as the prototype value
+                # so if the item has a value for that attribute name
+                # check to see if it is the right type
+                if key in item:
+                    if type(item[key]) != type(value):
+                        response.status = 'error'
+                        response.error_type = 'InvalidType'
+                        msg = 'Attribute {} must be of type {}'.format(
+                            key, type(value))
+                        response.error_message = msg
+                        return False
                 else:
-                    # a Python object was provided as the prototype value
-                    # so if the item has a value for that attribute name
-                    # check to see if it is the right type
-                    if key in item:
-                        if type(item[key]) != type(value):
-                            response.status = 'error'
-                            response.error_type = 'InvalidType'
-                            msg = 'Attribute {} must be of type {}'.format(
-                                key, type(value))
-                            response.error_message = msg
-                            return False
-                    else:
-                        item[key] = value
+                    item[key] = value
         return True
