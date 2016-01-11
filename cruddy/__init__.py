@@ -13,88 +13,19 @@
 # limitations under the License.
 
 import logging
-import uuid
-import time
 import decimal
 import base64
-import copy
-import re
 
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
+from cruddy.prototype import PrototypeHandler
+from cruddy.response import CRUDResponse
+from cruddy.exceptions import CruddyKeySchemaError, CruddyKeyNameError
+
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
-
-
-class CruddyKeySchemaException(Exception):
-
-    pass
-
-
-class CruddyKeyNameException(Exception):
-
-    pass
-
-
-class CRUDResponse(object):
-
-    def __init__(self, debug=False):
-        self._debug = debug
-        self.status = 'success'
-        self.data = None
-        self.error_type = None
-        self.error_code = None
-        self.error_message = None
-        self.raw_response = None
-        self.metadata = None
-
-    def __repr__(self):
-        return 'Status: {}'.format(self.status)
-
-    @property
-    def is_successful(self):
-        return self.status == 'success'
-
-    def flatten(self):
-        flat = copy.deepcopy(self.__dict__)
-        hiddens = []
-        for k in flat:
-            if k.startswith('_'):
-                hiddens.append(k)
-        for k in hiddens:
-            del flat[k]
-        return flat
-
-    def prepare(self):
-        if self.status == 'success':
-            if self.raw_response:
-                if not self._debug:
-                    md = self.raw_response['ResponseMetadata']
-                    self.metadata = md
-                    self.raw_response = None
-
-
-class Tokens(object):
-
-    token_re = re.compile('\<(?P<token>[^\s]+)\>')
-
-    def _get_uuid(self):
-        return str(uuid.uuid4())
-
-    def _get_timestamp(self):
-        return int(time.time() * 1000)
-
-    def check(self, token):
-        if isinstance(token, str):
-            match = self.token_re.match(token)
-            if match:
-                token_method_name = '_get_{}'.format(match.group('token'))
-                token_method = getattr(self, token_method_name, None)
-                if callable(token_method):
-                    token = token_method()
-        return token
 
 
 class CRUD(object):
@@ -111,7 +42,7 @@ class CRUD(object):
           creating the boto3 Session
         * region_name - name of the AWS region to use when creating the
           boto3 Session
-        * defaults - a dictionary of name/value pairs that will be used to
+        * prototype - a dictionary of name/value pairs that will be used to
           initialize newly created items
         * supported_ops - a list of operations supported by the CRUD handler
           (choices are list, get, create, update, delete)
@@ -128,12 +59,10 @@ class CRUD(object):
         placebo = kwargs.get('placebo')
         placebo_dir = kwargs.get('placebo_dir')
         placebo_mode = kwargs.get('placebo_mode', 'record')
-        self.defaults = kwargs.get('defaults', dict())
-        self.defaults['id'] = '<uuid>'
-        self.defaults['created_at'] = '<timestamp>'
+        self._prototype_handler = PrototypeHandler(
+            kwargs.get('prototype', dict()))
         self.supported_ops = kwargs.get('supported_ops', self.SupportedOps)
         self.encrypted_attributes = kwargs.get('encrypted_attributes', list())
-        self._tokens = Tokens()
         session = boto3.Session(profile_name=profile_name,
                                 region_name=region_name)
         if placebo and placebo_dir:
@@ -158,10 +87,10 @@ class CRUD(object):
         # First check the Key Schema
         if len(self.table.key_schema) != 1:
             msg = 'cruddy does not support RANGE keys'
-            raise CruddyKeySchemaException(msg)
+            raise CruddyKeySchemaError(msg)
         if self.table.key_schema[0]['AttributeName'] != 'id':
             msg = 'cruddy expects the HASH to be id'
-            raise CruddyKeyNameException(msg)
+            raise CruddyKeyNameError(msg)
         # Now process any GSI's
         if self.table.global_secondary_indexes:
             for gsi in self.table.global_secondary_indexes:
@@ -207,12 +136,6 @@ class CRUD(object):
                 response = self._kms_client.decrypt(
                     CiphertextBlob=base64.b64decode(item[encrypted_attr]))
                 item[encrypted_attr] = response['Plaintext']
-
-    def _handle_defaults(self, item, response):
-        missing = set(self.defaults.keys()) - set(item.keys())
-        for key in missing:
-            value = self._tokens.check(self.defaults[key])
-            item[key] = value
 
     def _check_supported_op(self, op_name, response):
         if op_name not in self.supported_ops:
@@ -303,25 +226,24 @@ class CRUD(object):
     def create(self, item):
         response = self._new_response()
         if self._check_supported_op('create', response):
-            self._handle_defaults(item, response)
-            item['modified_at'] = item['created_at']
-            self._encrypt(item)
-            params = {'Item': item}
-            self._call_ddb_method(self.table.put_item, params, response)
-            if response.status == 'success':
-                response.data = item
+            if self._prototype_handler.check(item, 'create', response):
+                self._encrypt(item)
+                params = {'Item': item}
+                self._call_ddb_method(self.table.put_item, params, response)
+                if response.status == 'success':
+                    response.data = item
         response.prepare()
         return response
 
     def update(self, item):
         response = self._new_response()
         if self._check_supported_op('update', response):
-            item['modified_at'] = self._tokens.check('<timestamp>')
-            self._encrypt(item)
-            params = {'Item': item}
-            self._call_ddb_method(self.table.put_item, params, response)
-            if response.status == 'success':
-                response.data = item
+            if self._prototype_handler.check(item, 'update', response):
+                self._encrypt(item)
+                params = {'Item': item}
+                self._call_ddb_method(self.table.put_item, params, response)
+                if response.status == 'success':
+                    response.data = item
         response.prepare()
         return response
 

@@ -4,30 +4,24 @@
         "Count": 1, 
         "Items": [
             {
-                "bar": {
-                    "N": "1452361157833"
-                }, 
                 "created_at": {
-                    "N": "1452361157833"
+                    "N": "1452464837891"
                 }, 
                 "modified_at": {
-                    "N": "1452361157833"
+                    "N": "1452464837891"
+                }, 
+                "id": {
+                    "S": "c5b5ee32-3188-4c21-91d7-7b1ed33cc42e"
                 }, 
                 "fie": {
                     "N": "1"
-                }, 
-                "foo": {
-                    "S": "bcf68424-5257-438b-94c2-50ce357c4196"
-                }, 
-                "id": {
-                    "S": "53c055fd-57af-482c-b92b-6a4d5fc4effa"
                 }
             }
         ], 
         "ScannedCount": 1, 
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "RequestId": "64NIH36IGJKKLKU1VEMBDVEIUJVV4KQNSO5AEMVJF66Q9ASUAAJG"
+            "RequestId": "5I4VADESQU271F8UV48HELOLVVVV4KQNSO5AEMVJF66Q9ASUAAJG"
         }
     }
 }

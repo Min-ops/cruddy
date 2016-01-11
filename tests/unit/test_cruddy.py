@@ -34,9 +34,10 @@ class TestCRUD(unittest.TestCase):
             profile_name='foobar',
             region_name='us-west-2',
             table_name='mg-test-cruddy',
-            defaults={'foo': '<uuid>',
-                      'bar': '<timestamp>',
-                      'fie': 1},
+            prototype={'id': '<on-create:uuid>',
+                       'created_at': '<on-create:timestamp>',
+                       'modified_at': '<on-update:timestamp>',
+                       'fie': 1},
             placebo=placebo,
             placebo_mode='playback',
             placebo_dir=self.data_path)
@@ -52,7 +53,8 @@ class TestCRUD(unittest.TestCase):
         item = r.data
         self.assertEqual(r.status, 'success')
         self.assertEqual(item['fie'], 1)
-        self.assertEqual(item['created_at'], item['modified_at'])
+        self.assertTrue(isinstance(item['created_at'], int))
+        self.assertTrue(isinstance(item['modified_at'], int))
         r = self.crud.list()
         self.assertEqual(r.status, 'success')
         self.assertEqual(len(r.data), 1)
