@@ -16,6 +16,8 @@ import re
 import uuid
 import time
 
+from botocore.vendored.six import string_types
+
 
 class CalculatedValue(object):
 
@@ -24,7 +26,7 @@ class CalculatedValue(object):
 
     @classmethod
     def check(cls, token):
-        if isinstance(token, str):
+        if isinstance(token, string_types):
             match = cls.token_re.match(token)
             if match:
                 operation = match.group('operation')
