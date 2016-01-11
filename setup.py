@@ -9,7 +9,7 @@ requires = [
 
 setup(
     name='cruddy',
-    version='0.3.3',
+    version='0.4.0',
     description='A CRUD wrapper class for Amazon DynamoDB',
     long_description=open('README.md').read(),
     author='Mitch Garnaat',
