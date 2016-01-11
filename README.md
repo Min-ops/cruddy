@@ -56,17 +56,11 @@ This prototype says that your item must have an ``id`` attribute whose value is
 of type ``str``, a ``created_at`` attribute whose value is of type ``int``, and
 a ``foo`` attribute whose value is also an ``int``.  Your item may contain
 other items as well (this is not a schema) but it must contain these attribute
-name/value pairs and cruddy will validate that it does each time an item is
-created or updated.
+name/value pairs.  If the item you pass into the ``create`` method does not
+contain these attributes cruddy will create the necessary attributes and will
+initialize the value to what ever value is created by calling the specified
+Python type (e.g. int() returns 0, str() returns '').
 
-If your item does not contain these attribute names and values of the
-appropriate type, cruddy will return a response with:
-
-```
-'status': 'error',
-'error_type': 'TBD',
-'error_message': 'TBD'
-```
 
 #### Defaults
 
@@ -81,7 +75,8 @@ We could also define a prototype like this:
 ```
 
 Note that the ``foo`` attribute now has a value of ``1`` rather than referring
-to a Python type.  This is a default value.  So, in this case if you pass an
+to a Python type.  This is used as the default value rather than the default
+value associated with Python type.  So, in this case if you pass an
 item to the ``create`` method that does have a value for the ``foo`` attribute
 cruddy will create an attribute called ``foo`` with a value of ``1``.  In
 addition, when the item is later updated cruddy will make sure that the value
