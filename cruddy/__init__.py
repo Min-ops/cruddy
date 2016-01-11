@@ -247,6 +247,22 @@ class CRUD(object):
         response.prepare()
         return response
 
+    def increment_counter(self, item, counter_name, increment=1):
+        response = self._new_response()
+        if self._check_supported_op('update', response):
+            self._encrypt(item)
+            params = {
+                'Key': {'id': item['id']},
+                'UpdateExpression': 'set {} = {} + :val'.format(
+                    counter_name, counter_name),
+                'ExpressionAttributeValues': {
+                    ':val': decimal.Decimal(increment)},
+                'ReturnValues': 'UPDATED_NEW'
+            }
+            self._call_ddb_method(self.table.update_item, params, response)
+        response.prepare()
+        return response
+
     def delete(self, id):
         response = self._new_response()
         if self._check_supported_op('delete', response):

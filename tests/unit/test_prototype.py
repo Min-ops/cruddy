@@ -35,7 +35,7 @@ class TestPrototype(unittest.TestCase):
 
     def test_int_type_value_wrong_type(self):
         response = CRUDResponse()
-        prototype = PrototypeHandler({'foo': int})
+        prototype = PrototypeHandler({'foo': 1})
         item = {'foo': 'bar'}
         result = prototype.check(item, 'create', response)
         self.assertFalse(result)
@@ -43,7 +43,7 @@ class TestPrototype(unittest.TestCase):
         self.assertEqual(response.error_type, 'InvalidType')
 
     def test_int_type_value_right_type(self):
-        prototype = PrototypeHandler({'foo': int})
+        prototype = PrototypeHandler({'foo': 1})
         response = CRUDResponse()
         item = {'foo': 1}
         result = prototype.check(item, 'create', response)
@@ -51,16 +51,17 @@ class TestPrototype(unittest.TestCase):
         self.assertEqual(response.status, 'success')
 
     def test_int_type_value_default(self):
-        prototype = PrototypeHandler({'foo': int})
+        prototype = PrototypeHandler({'foo': 1})
         response = CRUDResponse()
         item = {}
         result = prototype.check(item, 'create', response)
         self.assertTrue(result)
         self.assertEqual(response.status, 'success')
+        self.assertEqual(item['foo'], 1)
 
     def test_list_type_value_wrong_type(self):
         response = CRUDResponse()
-        prototype = PrototypeHandler({'foo': list})
+        prototype = PrototypeHandler({'foo': []})
         item = {'foo': 1}
         result = prototype.check(item, 'create', response)
         self.assertFalse(result)
@@ -68,15 +69,15 @@ class TestPrototype(unittest.TestCase):
         self.assertEqual(response.error_type, 'InvalidType')
 
     def test_list_type_value_right_type(self):
-        prototype = PrototypeHandler({'foo': int})
+        prototype = PrototypeHandler({'foo': 1})
         response = CRUDResponse()
-        item = {'foo': 1}
+        item = {'foo': 2}
         result = prototype.check(item, 'create', response)
         self.assertTrue(result)
         self.assertEqual(response.status, 'success')
 
     def test_list_type_value_default(self):
-        prototype = PrototypeHandler({'foo': list})
+        prototype = PrototypeHandler({'foo': []})
         response = CRUDResponse()
         item = {}
         result = prototype.check(item, 'create', response)
