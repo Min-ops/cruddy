@@ -232,3 +232,77 @@ Atomically increments a counter attribute in the item.  You must specify the
 name of the attribute as ``counter_name`` and, optionally, the ``increment``
 which defaults to ``1``.
 
+## Using the handler interface
+
+In addition to the methods described above, cruddy also provides a generic
+handler interface.  This is mainly useful when you want to wrap a cruddy
+handler in a Lambda function and then call that Lambda function to access the
+CRUD capabilities.
+
+To call the handler, you simply put all necessary parameters into a Python
+dictionary and then call the handler with that dict.
+
+```
+params = {
+    'operation': 'create',
+    'item': {'foo': 'bar', 'fie': 'baz'}
+}
+response = crud.handler(**params)
+```
+
+So, you could define a Lambda function like this:
+
+```
+import logging
+import json
+
+import cruddy
+
+LOG = logging.getLogger()
+LOG.setLevel(logging.INFO)
+
+config = json.load(open('config.json'))
+crud = cruddy.CRUD(**config)
+
+
+def handler(event, context):
+    LOG.info(event)
+    response = crud.handler(**event)
+    return response.flatten()
+```
+
+Where ``config.json`` looks like this:
+
+```
+{
+    "region_name": "us-west-2",
+    "table_name": "foobar",
+    "prototype": {"id": "<on-create:uuid>",
+                  "created_at": "<on-create:timestamp>",
+                  "modified_at": "<on-update:timestamp>",
+                  "foo": 1,
+                  "bar": ""},
+}
+```
+
+If you uploaded this function (and config file) to AWS Lambda you could then
+invoke the handler like this.
+
+```
+import json
+
+import boto3
+
+session = boto3.Session()
+lambda_client = session.client('lambda')
+
+params = {'operation': 'create', 'item': {'fie': 'baz'}}
+response = lambda_client.invoke(
+    FunctionName='myfunction',
+    InvocationType='RequestResponse',
+    Payload=json.dumps(params))
+cruddy_response = json.load(response['Payload'])
+```
+
+The variable ``cruddy_response`` would now contain the response structure
+returned by cruddy, flattened into a Python dictionary.
