@@ -31,7 +31,7 @@ LOG.setLevel(logging.INFO)
 class CRUD(object):
 
     SupportedOps = ["create", "update", "get", "delete",
-                    "list", "query", "increment_counter"]
+                    "list", "search", "increment_counter"]
 
     def __init__(self, **kwargs):
         """
@@ -165,16 +165,16 @@ class CRUD(object):
     def _new_response(self):
         return CRUDResponse(self._debug)
 
-    def query(self, query_string):
+    def search(self, query):
         response = self._new_response()
-        if self._check_supported_op('query', response):
-            if '=' not in query_string:
+        if self._check_supported_op('search', response):
+            if '=' not in query:
                 response.status = 'error'
                 response.error_type = 'InvalidQuery'
                 msg = 'Only the = operation is supported'
                 response.error_message = msg
             else:
-                key, value = query_string.split('=')
+                key, value = query.split('=')
                 if key not in self._indexes:
                     response.status = 'error'
                     response.error_type = 'InvalidQuery'
@@ -247,11 +247,11 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def increment_counter(self, item, counter_name, increment=1):
+    def increment_counter(self, id, counter_name, increment=1):
         response = self._new_response()
         if self._check_supported_op('increment_counter', response):
             params = {
-                'Key': {'id': item['id']},
+                'Key': {'id': id},
                 'UpdateExpression': 'set {} = {} + :val'.format(
                     counter_name, counter_name),
                 'ExpressionAttributeValues': {
@@ -309,19 +309,19 @@ class CRUD(object):
                     response.error_type = 'MissingParameter'
                     response.error_message = 'delete operation requires an id'
                 response = self.delete(**kwargs)
-            elif operation == 'query':
-                if 'query_string' in kwargs:
-                    response = self.query(kwargs['query_string'])
+            elif operation == 'search':
+                if 'query' in kwargs:
+                    response = self.search(kwargs['query'])
                 else:
                     response.status == 'error'
                     response.error_type = 'MissingParameter'
                     msg = 'query operation requires a query parameter'
                     response.error_message = msg
             elif operation == 'increment_counter':
-                if 'item' in kwargs and 'counter_name' in kwargs:
+                if 'id' in kwargs and 'counter_name' in kwargs:
                     increment = kwargs.get('increment', 1)
                     response = self.increment_counter(
-                        kwargs['item'], kwargs['counter_name'], increment)
+                        kwargs['id'], kwargs['counter_name'], increment)
                 else:
                     response.status == 'error'
                     response.error_type = 'MissingParameter'

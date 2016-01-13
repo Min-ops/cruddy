@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 requires = [
     'boto3',
+    'click',
 ]
 
 
@@ -16,6 +17,10 @@ setup(
     author_email='mitch@cloudnative.io',
     url='https://github.com/cloudnative/cruddy',
     packages=find_packages(exclude=['tests*']),
+    entry_points="""
+        [console_scripts]
+        cruddy=cruddy.scripts.cli:cli
+    """,
     install_requires=requires,
     license="Apache License 2.0",
     classifiers=(
