@@ -252,8 +252,8 @@ class CRUD(object):
         if self._check_supported_op('increment_counter', response):
             params = {
                 'Key': {'id': id},
-                'UpdateExpression': 'set {} = {} + :val'.format(
-                    counter_name, counter_name),
+                'UpdateExpression': 'set #ctr = #ctr + :val',
+                'ExpressionAttributeNames': {"#ctr": counter_name},
                 'ExpressionAttributeValues': {
                     ':val': decimal.Decimal(increment)},
                 'ReturnValues': 'UPDATED_NEW'
