@@ -306,3 +306,57 @@ cruddy_response = json.load(response['Payload'])
 
 The variable ``cruddy_response`` would now contain the response structure
 returned by cruddy, flattened into a Python dictionary.
+
+## The cruddy CLI
+
+cruddy also offers a CLI that allows you to access your DynamoDB table or
+Lambda-based handler via a simple command line interface.  It supports all
+operations supported by cruddy.
+
+### Using the cruddy CLI with a DynamoDB table
+
+To use cruddy to directly interact with a DynamoDB table, you need to place the
+configuration information for your cruddy handler in a JSON file.  So, from our
+previous example if we created a file called ``fiebaz.json`` like this:
+
+```
+{
+    "profile_name": "foobar",
+    "region_name": "us-west-2",
+    "table_name": "fiebaz",
+    "prototype": {"id": "<on-create:uuid>",
+                  "created_at": "<on-create:timestamp>",
+                  "modified_at": "<on-update:timestamp>"}
+}
+```
+
+We could then reference this when using the cruddy CLI:
+
+```
+$ cruddy --config-file fiebaz.json list
+[
+  {<a listing of all items in fiebaz>}
+  ...
+]
+```
+
+Use the ``--help`` for more information on how to use the cruddy CLI.
+
+### Using the cruddy CLI with a Lambda handler
+
+All of the operations of the CLI work exactly the same whether you are using it
+with a DynamoDB table directly or through a Lambda controller.  The only
+difference is that rather than referencing a config file containing info about
+the table and other parameters needed to create the cruddy CRUD handler, you
+simply tell the CLI about the Lambda function.
+
+```
+$ cruddy --lambda-fn fiebaz list
+[
+  {<a listing of all items in fiebaz>}
+  ...
+]
+```
+
+where ``fiebaz`` is the name of your Lambda handler.
+
