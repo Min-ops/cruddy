@@ -35,7 +35,7 @@ class LambdaHandler(object):
 
     def _invoke_lambda(self, payload):
         response = self._lambda_client.invoke(
-            FunctionName=self.controller_name,
+            FunctionName=self.lambda_fn,
             InvocationType='RequestResponse',
             Payload=json.dumps(payload)
         )
