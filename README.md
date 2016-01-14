@@ -226,9 +226,9 @@ return a list (possibly empty) of all items matching the query and the
 be ``error`` and the ``error_type`` and ``error_message`` will provide further
 information about the error.
 
-### increment_counter(*item*, *counter_name*, [*increment*])
+### increment_counter(*id*, *counter_name*, [*increment*])
 
-Atomically increments a counter attribute in the item.  You must specify the
+Atomically increments a counter attribute in the item identified by ``id``.  You must specify the
 name of the attribute as ``counter_name`` and, optionally, the ``increment``
 which defaults to ``1``.
 
