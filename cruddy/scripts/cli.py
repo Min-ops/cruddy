@@ -97,7 +97,7 @@ pass_handler = click.make_pass_decorator(LambdaHandler)
     default=False,
     help='Turn on debugging output'
 )
-@click.version_option('0.8.0')
+@click.version_option('0.8.1')
 @click.pass_context
 def cli(ctx, profile, region, lambda_fn, config_file, debug):
     """
