@@ -16,19 +16,19 @@ The first thing to do is to create a CRUD handler for your DynamoDB table.  The
 constructor for the CRUD class takes a number of parameters to help configure
 the handler for your application.  The full list of parameters are:
 
-* table_name - name of the backing DynamoDB table (required)
-* profile_name - name of the AWS credential profile to use when creating the
+* **table_name** - name of the backing DynamoDB table (required)
+* **profile_name** - name of the AWS credential profile to use when creating the
   boto3 Session
-* region_name - name of the AWS region to use when creating the boto3 Session
-* prototype - a dictionary that describes the prototypical object stored in
+* **region_name** - name of the AWS region to use when creating the boto3 Session
+* **prototype** - a dictionary that describes the prototypical object stored in
   your table (see below)
-* supported_ops - a list of operations supported by the CRUD handler
+* **supported_ops** - a list of operations supported by the CRUD handler
   (choices are list, get, create, update, delete, search, increment_counter)
-* encrypted_attributes - a list of tuples where the first item in the tuple is
+* **encrypted_attributes** - a list of tuples where the first item in the tuple is
   the name of the attribute that should be encrypted and the second
   item in the tuple is the KMS master key ID to use for
   encrypting/decrypting the value.
-* debug - if not False this will cause the raw_response to be left
+* **debug** - if not False this will cause the raw_response to be left
   in the response dictionary
 
 ### Prototypes
