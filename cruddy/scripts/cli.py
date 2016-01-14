@@ -15,19 +15,26 @@ import json
 import boto3
 import click
 
+from cruddy import CRUD
+
 
 class LambdaHandler(object):
 
     def __init__(self, profile_name, region_name,
-                 controller_name, debug=False):
-        session = boto3.Session(
-            profile_name=profile_name, region_name=region_name)
-        self.client = session.client('lambda')
-        self.controller_name = controller_name
+                 lambda_fn, config_file, debug=False):
+        self.lambda_fn = lambda_fn
+        self._lambda_client = None
+        if self.lambda_fn:
+            session = boto3.Session(
+                profile_name=profile_name, region_name=region_name)
+            self._lambda_client = session.client('lambda')
+        if config_file:
+            config = json.load(config_file)
+            self.crud = CRUD(**config)
         self.debug = debug
 
-    def invoke(self, payload):
-        response = self.client.invoke(
+    def _invoke_lambda(self, payload):
+        response = self._lambda_client.invoke(
             FunctionName=self.controller_name,
             InvocationType='RequestResponse',
             Payload=json.dumps(payload)
@@ -49,6 +56,23 @@ class LambdaHandler(object):
             click.echo(click.style(crud_response['error_type'], fg='red'))
             click.echo(click.style(crud_response['error_message'], fg='red'))
 
+    def _invoke_cruddy(self, payload):
+        crud_response = self.crud.handler(**payload)
+        if crud_response.status == 'success':
+            click.echo(json.dumps(crud_response.data, indent=4))
+        else:
+            click.echo(click.style(crud_response.status, fg='red'))
+            click.echo(click.style(crud_response.error_type, fg='red'))
+            click.echo(click.style(crud_response.error_message, fg='red'))
+
+    def invoke(self, payload):
+        if self.lambda_fn:
+            self._invoke_lambda(payload)
+        elif self.crud:
+            self._invoke_cruddy(payload)
+        else:
+            msg = 'You must specify either --lambda-fn or --config-file'
+            click.echo(click.style(msg, fg='red'))
 
 pass_handler = click.make_pass_decorator(LambdaHandler)
 
@@ -63,24 +87,33 @@ pass_handler = click.make_pass_decorator(LambdaHandler)
     default=None,
     help='AWS region')
 @click.option(
-    '--controller',
+    '--lambda-fn',
     help='AWS Lambda controller name')
+@click.option(
+    '--config-file',
+    help='cruddy config file', type=click.File('rb'))
 @click.option(
     '--debug/--no-debug',
     default=False,
     help='Turn on debugging output'
 )
-@click.version_option('0.1.0')
+@click.version_option('0.7.1')
 @click.pass_context
-def cli(ctx, profile, region, controller, debug):
+def cli(ctx, profile, region, lambda_fn, config_file, debug):
     """
-    cruddy is a CLI interface to an AWS Lambda function that is acting as
-    a cruddy controller for a DynamoDB table.
+    cruddy is a CLI interface to the cruddy handler.  It can be used in one
+    of two ways.
 
-    The cruddy CLI simply invokes the Lambda function, passing in the correct
-    data for the various cruddy operations and then displays the results.
+    First, you can pass in a ``--config-file`` option which is a JSON file
+    containing all of your cruddy parameters and the CLI will create a cruddy
+    handler to manipulate the DynamoDB table directly.
+
+    Alternatively, you can pass in a ``--lambda-fn`` option which is the
+    name of an AWS Lambda function which contains a cruddy handler.  In this
+    case the CLI will call the Lambda function to make the changes in the
+    underlying DynamoDB table.
     """
-    ctx.obj = LambdaHandler(profile, region, controller, debug)
+    ctx.obj = LambdaHandler(profile, region, lambda_fn, config_file, debug)
 
 
 @cli.command()
