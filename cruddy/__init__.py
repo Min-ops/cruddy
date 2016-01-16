@@ -259,6 +259,11 @@ class CRUD(object):
                 'ReturnValues': 'UPDATED_NEW'
             }
             self._call_ddb_method(self.table.update_item, params, response)
+            if response.status == 'success':
+                if 'Attributes' in response.raw_response:
+                    self._replace_decimals(response.raw_response)
+                    attr = response.raw_response['Attributes'][counter_name]
+                    response.data = attr
         response.prepare()
         return response
 
