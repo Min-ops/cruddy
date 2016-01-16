@@ -125,11 +125,16 @@ def list(handler):
 
 
 @cli.command()
+@click.option(
+    '--decrypt/--no-decrypt',
+    default=False,
+    help='Decrypt any encrypted attributes')
 @click.argument('item_id', nargs=1)
 @pass_handler
-def get(handler, item_id):
+def get(handler, item_id, decrypt):
     """Get an item"""
     data = {'operation': 'get',
+            'decrypt': decrypt,
             'id': item_id}
     handler.invoke(data)
 
