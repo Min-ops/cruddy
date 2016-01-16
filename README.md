@@ -24,10 +24,9 @@ the handler for your application.  The full list of parameters are:
   your table (see below)
 * **supported_ops** - a list of operations supported by the CRUD handler
   (choices are list, get, create, update, delete, search, increment_counter)
-* **encrypted_attributes** - a list of tuples where the first item in the tuple is
-  the name of the attribute that should be encrypted and the second
-  item in the tuple is the KMS master key ID to use for
-  encrypting/decrypting the value.
+* **encrypted_attributes** - a list of lists or tuples where the first item is
+  the name of the attribute that should be encrypted and the second item is the
+  KMS master key ID to use for encrypting/decrypting the value.
 * **debug** - if not False this will cause the raw_response to be left
   in the response dictionary
 
