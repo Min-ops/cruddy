@@ -203,16 +203,16 @@ Deletes the item corresponding to ``id``.
 The following operations extend beyond the basic CRUD functions but are
 included because of they are quite useful.
 
-### query(*query*)
+### search(*query*)
 
-Cruddy provides a limited but useful interface to query GSI indexes in DynamoDB
+Cruddy provides a limited but useful interface to search GSI indexes in DynamoDB
 with the following limitations (hopefully some of these will be expanded or
 eliminated in the future.
 
 * The GSI must be configured with a only HASH and not a RANGE.
 * The only operation supported in the query is equality
 
-To use the ``query`` operation you must pass in a query string of this form:
+To use the ``search`` operation you must pass in a query string of this form:
 
     <attribute_name>=<value>
 
