@@ -85,15 +85,13 @@ new item in our table.
 
 ```
 $ cruddy --lambda-fn lambda-cruddy create item1.json
-[
-    {
-        "bar": 1, 
-        "created_at": 1452958821134, 
-        "modified_at": 1452958821134, 
-        "foo": "abcde", 
-        "id": "c573f917-84a7-406d-99a9-c401e3167e39"
-    }
-]
+{
+    "modified_at": 1453003915424, 
+    "created_at": 1453003915424, 
+    "foo": "abcde", 
+    "bar": 1, 
+    "id": "9103a503-3e0b-4859-ab9c-e27ce228a23b"
+}
 $
 ```
 
@@ -122,4 +120,96 @@ items in our table.  It looks like this:
                   "bar": 1}
 ...
 }
+```
+
+Now let's create another item:
+
+```
+$ cruddy --lambda-fn lambda-cruddy create item2.json
+{
+    "modified_at": 1453004030544, 
+    "created_at": 1453004030544, 
+    "foo": "fghij", 
+    "bar": 10, 
+    "id": "851170cf-c0d4-4c1e-8cc0-82958415d0c0"
+}
+$
+```
+
+Now let's list our items again:
+
+```
+$ cruddy --lambda-fn lambda-cruddy list
+[
+    {
+        "bar": 10, 
+        "created_at": 1453004030544, 
+        "foo": "fghij", 
+        "modified_at": 1453004030544, 
+        "id": "851170cf-c0d4-4c1e-8cc0-82958415d0c0"
+    }, 
+    {
+        "bar": 1, 
+        "created_at": 1453003915424, 
+        "foo": "abcde", 
+        "modified_at": 1453003915424, 
+        "id": "9103a503-3e0b-4859-ab9c-e27ce228a23b"
+    }
+]
+$
+```
+
+You can ``get`` a particular item:
+
+```
+$ cruddy --lambda-fn lambda-cruddy get 851170cf-c0d4-4c1e-8cc0-82958415d0c0
+{
+    "bar": 10, 
+    "created_at": 1453004030544, 
+    "foo": "fghij", 
+    "modified_at": 1453004030544, 
+    "id": "851170cf-c0d4-4c1e-8cc0-82958415d0c0"
+}
+$
+```
+
+You can search based on any index.  In our case, we defined a GSI for the
+``foo`` attribute so we can search on that:
+
+```
+$ cruddy --lambda-fn lambda-cruddy search foo=abcde
+[
+    {
+        "bar": 1, 
+        "created_at": 1453003915424, 
+        "foo": "abcde", 
+        "modified_at": 1453003915424, 
+        "id": "9103a503-3e0b-4859-ab9c-e27ce228a23b"
+    }
+]
+$
+```
+
+You can do an atomic increment of any integer attribute, such as ``bar``:
+
+```
+$ cruddy --lambda-fn lambda-cruddy increment 851170cf-c0d4-4c1e-8cc0-82958415d0c0 bar
+11
+$ cruddy --lambda-fn lambda-cruddy get 851170cf-c0d4-4c1e-8cc0-82958415d0c0
+{
+    "bar": 11, 
+    "created_at": 1453004030544, 
+    "foo": "fghij", 
+    "modified_at": 1453004030544, 
+    "id": "851170cf-c0d4-4c1e-8cc0-82958415d0c0"
+}
+$
+```
+
+And you can, of course, delete an item:
+
+```
+$ cruddy --lambda-fn lambda-cruddy delete 851170cf-c0d4-4c1e-8cc0-82958415d0c0
+true
+$
 ```
