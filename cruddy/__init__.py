@@ -272,6 +272,7 @@ class CRUD(object):
         if self._check_supported_op('delete', response):
             params = {'Key': {'id': id}}
             self._call_ddb_method(self.table.delete_item, params, response)
+            response.data = 'true'
         response.prepare()
         return response
 

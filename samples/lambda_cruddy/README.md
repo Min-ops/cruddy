@@ -105,10 +105,10 @@ It looks like this:
 ```
 
 As you can see, the only explicit field we create in the JSON file is one
-called ``foo`` with a value of ``"abcde"```.  But the item return by the create
-operation contains more attributes.  That's because the configuration file we
-have associated with our Lambda handler function defines a **prototype** for
-items in our table.  It looks like this:
+called ``foo`` with a value of ``"abcde"```.  But the item returned by the
+create operation contains more attributes.  That's because the configuration
+file we have associated with our Lambda handler function defines a
+**prototype** for items in our table.  It looks like this:
 
 ```
 {
@@ -121,6 +121,17 @@ items in our table.  It looks like this:
 ...
 }
 ```
+
+This prototype says that the item will have an attribute called ``foo`` which
+will be a string and another attribute called ``bar`` which will be an int.  If
+you don't supply values for these attributes they will be initialized to
+whatever value you provide in the prototype.
+
+In addition, there are three calculated values.  One, ``id`` is a UUID that
+will be stored in the object when it is created.  The others are timestamp
+objects.  One of them, ``created_at`` will be stored in the object at creation
+time and the other, ``modified_at`` will be written into the object at create
+time and any time the object is modified.
 
 Now let's create another item:
 
