@@ -1,0 +1,23 @@
+---
+name: lambda-cruddy
+environments:
+  dev:
+    profile: <your AWS profile>
+    region: <your AWS region>
+    policy:
+      resources:
+        - arn: <ARN of DynamoDB table>
+          actions:
+          - "*"
+        - arn: <ARN of DynamoDB table>/index/*
+          actions:
+          - "Query"
+        - arn: arn:aws:logs:*:*:*
+          actions:
+          - "*"
+lambda:
+  description: A sample Lambda CRUD handler
+  handler: lambda_cruddy.handler
+  runtime: python2.7
+  memory_size: 128
+  timeout: 3

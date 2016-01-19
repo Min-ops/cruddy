@@ -1,0 +1,57 @@
+{
+    "Description": "Create the DynamoDB table for the lambda-cruddy sample",
+    "Outputs": {
+        "table": {
+            "Description": "The table",
+            "Value": {
+                "Ref": "table"
+            }
+        }
+    },
+    "Resources": {
+        "table": {
+            "Properties": {
+                "TableName": "lambda-cruddy",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "id",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "foo",
+                        "AttributeType": "S"
+                    }
+                ],
+                "GlobalSecondaryIndexes": [
+                    {
+                        "IndexName": "foo-index",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "foo",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        },
+                        "ProvisionedThroughput": {
+                            "ReadCapacityUnits": 1,
+                            "WriteCapacityUnits": 1
+                        }
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "id",
+                        "KeyType": "HASH"
+                    }
+                ],
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 1,
+                    "WriteCapacityUnits": 1
+                }
+            },
+            "Type": "AWS::DynamoDB::Table"
+        }
+    }
+}

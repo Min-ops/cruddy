@@ -201,7 +201,7 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def get(self, id, decrypt=False):
+    def get(self, id, decrypt=False, id_name='id'):
         response = self._new_response()
         if self._check_supported_op('get', response):
             if id is None:
@@ -209,7 +209,7 @@ class CRUD(object):
                 response.error_type = 'IDRequired'
                 response.error_message = 'Get requires an id'
             else:
-                params = {'Key': {'id': id},
+                params = {'Key': {id_name: id},
                           'ConsistentRead': True}
                 self._call_ddb_method(self.table.get_item,
                                       params, response)
@@ -247,11 +247,11 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def increment_counter(self, id, counter_name, increment=1):
+    def increment_counter(self, id, counter_name, increment=1, id_name='id'):
         response = self._new_response()
         if self._check_supported_op('increment_counter', response):
             params = {
-                'Key': {'id': id},
+                'Key': {id_name: id},
                 'UpdateExpression': 'set #ctr = #ctr + :val',
                 'ExpressionAttributeNames': {"#ctr": counter_name},
                 'ExpressionAttributeValues': {
@@ -259,19 +259,30 @@ class CRUD(object):
                 'ReturnValues': 'UPDATED_NEW'
             }
             self._call_ddb_method(self.table.update_item, params, response)
+            if response.status == 'success':
+                if 'Attributes' in response.raw_response:
+                    self._replace_decimals(response.raw_response)
+                    attr = response.raw_response['Attributes'][counter_name]
+                    response.data = attr
         response.prepare()
         return response
 
-    def delete(self, id):
+    def delete(self, id, id_name='id'):
         response = self._new_response()
         if self._check_supported_op('delete', response):
-            params = {'Key': {'id': id}}
+            params = {'Key': {id_name: id}}
             self._call_ddb_method(self.table.delete_item, params, response)
+            response.data = 'true'
         response.prepare()
         return response
 
-    def handler(self, operation, **kwargs):
+    def handler(self, operation=None, **kwargs):
         response = self._new_response()
+        if operation is None:
+            response.status = 'error'
+            response.error_type = 'MissingOperation'
+            response.error_message = 'You must pass an operation'
+            return response
         operation = operation.lower()
         self._check_supported_op(operation, response)
         if response.status == 'success':

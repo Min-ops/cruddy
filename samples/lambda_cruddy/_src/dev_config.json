@@ -1,0 +1,12 @@
+{
+    "region_name": "us-west-2",
+    "table_name": "lambda-cruddy",
+    "prototype": {"id": "<on-create:uuid>",
+                  "created_at": "<on-create:timestamp>",
+                  "modified_at": "<on-update:timestamp>",
+                  "foo": "",
+                  "bar": 1},
+    "supported_operations": ["create", "update", "get",
+                             "delete", "list", "search",
+                             "increment_counter"]
+}
