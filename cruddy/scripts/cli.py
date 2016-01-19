@@ -12,49 +12,41 @@
 # language governing permissions and limitations under the License.
 import json
 
-import boto3
 import click
 
 from cruddy import CRUD
+from cruddy.lambdaclient import LambdaClient
 
 
-class LambdaHandler(object):
+class CLIHandler(object):
 
     def __init__(self, profile_name, region_name,
                  lambda_fn, config_file, debug=False):
         self.lambda_fn = lambda_fn
-        self._lambda_client = None
-        if self.lambda_fn:
-            session = boto3.Session(
-                profile_name=profile_name, region_name=region_name)
-            self._lambda_client = session.client('lambda')
+        self.lambda_client = None
+        if lambda_fn:
+            self.lambda_client = LambdaClient(
+                profile_name=profile_name, region_name=region_name,
+                func_name=lambda_fn, debug=debug)
         if config_file:
             config = json.load(config_file)
             self.crud = CRUD(**config)
         self.debug = debug
 
     def _invoke_lambda(self, payload):
-        response = self._lambda_client.invoke(
-            FunctionName=self.lambda_fn,
-            InvocationType='RequestResponse',
-            Payload=json.dumps(payload)
-        )
-        if self.debug:
-            click.echo(click.style('Response from Lambda', fg='green'))
-            click.echo(response)
-        crud_response = json.load(response['Payload'])
+        response = self.lambda_client.invoke(payload)
         if self.debug:
             click.echo(click.style('CRUD Response', fg='green'))
-            click.echo(crud_response)
-        if 'status' not in crud_response:
+            click.echo(response)
+        if 'status' not in response:
             click.echo(click.style('Something is very wrong', fg='red'))
-            click.echo(crud_response)
-        elif crud_response['status'] == 'success':
-            click.echo(json.dumps(crud_response['data'], indent=4))
+            click.echo(response)
+        elif response['status'] == 'success':
+            click.echo(json.dumps(response['data'], indent=4))
         else:
-            click.echo(click.style(crud_response['status'], fg='red'))
-            click.echo(click.style(crud_response['error_type'], fg='red'))
-            click.echo(click.style(crud_response['error_message'], fg='red'))
+            click.echo(click.style(response['status'], fg='red'))
+            click.echo(click.style(response['error_type'], fg='red'))
+            click.echo(click.style(response['error_message'], fg='red'))
 
     def _invoke_cruddy(self, payload):
         crud_response = self.crud.handler(**payload)
@@ -74,7 +66,7 @@ class LambdaHandler(object):
             msg = 'You must specify either --lambda-fn or --config-file'
             click.echo(click.style(msg, fg='red'))
 
-pass_handler = click.make_pass_decorator(LambdaHandler)
+pass_handler = click.make_pass_decorator(CLIHandler)
 
 
 @click.group()
@@ -113,7 +105,7 @@ def cli(ctx, profile, region, lambda_fn, config_file, debug):
     case the CLI will call the Lambda function to make the changes in the
     underlying DynamoDB table.
     """
-    ctx.obj = LambdaHandler(profile, region, lambda_fn, config_file, debug)
+    ctx.obj = CLIHandler(profile, region, lambda_fn, config_file, debug)
 
 
 @cli.command()
