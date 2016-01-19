@@ -61,9 +61,9 @@ class LambdaClient(object):
         data = {'operation': 'list'}
         return self.invoke(data)
 
-    def get(self, item_id, decrypt=False):
+    def get(self, item_id, decrypt=False, id_name='id'):
         data = {'operation': 'get',
-                'id': item_id,
+                id_name: item_id,
                 'decrypt': decrypt}
         return self.invoke(data)
 
@@ -72,9 +72,9 @@ class LambdaClient(object):
                 'item': item}
         return self.invoke(data)
 
-    def delete(self, item_id):
+    def delete(self, item_id, id_name='id'):
         data = {'operation': 'get',
-                'id': item_id}
+                id_name: item_id}
         return self.invoke(data)
 
     def search(self, query):
@@ -82,10 +82,9 @@ class LambdaClient(object):
                 'query': query}
         return self.invoke(data)
 
-    def increment(self, item_id, counter_name, increment=1):
+    def increment(self, item_id, counter_name, increment=1, id_name='id'):
         data = {'operation': 'increment_counter',
-                'id': item_id,
+                id_name: item_id,
                 'counter_name': counter_name,
                 'increment': increment}
         return self.invoke(data)
-    

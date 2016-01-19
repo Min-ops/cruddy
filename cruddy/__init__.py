@@ -201,7 +201,7 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def get(self, id, decrypt=False):
+    def get(self, id, decrypt=False, id_name='id'):
         response = self._new_response()
         if self._check_supported_op('get', response):
             if id is None:
@@ -209,7 +209,7 @@ class CRUD(object):
                 response.error_type = 'IDRequired'
                 response.error_message = 'Get requires an id'
             else:
-                params = {'Key': {'id': id},
+                params = {'Key': {id_name: id},
                           'ConsistentRead': True}
                 self._call_ddb_method(self.table.get_item,
                                       params, response)
@@ -247,11 +247,11 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def increment_counter(self, id, counter_name, increment=1):
+    def increment_counter(self, id, counter_name, increment=1, id_name='id'):
         response = self._new_response()
         if self._check_supported_op('increment_counter', response):
             params = {
-                'Key': {'id': id},
+                'Key': {id_name: id},
                 'UpdateExpression': 'set #ctr = #ctr + :val',
                 'ExpressionAttributeNames': {"#ctr": counter_name},
                 'ExpressionAttributeValues': {
@@ -267,10 +267,10 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def delete(self, id):
+    def delete(self, id, id_name='id'):
         response = self._new_response()
         if self._check_supported_op('delete', response):
-            params = {'Key': {'id': id}}
+            params = {'Key': {id_name: id}}
             self._call_ddb_method(self.table.delete_item, params, response)
             response.data = 'true'
         response.prepare()
