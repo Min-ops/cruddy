@@ -56,3 +56,36 @@ class LambdaClient(object):
         except botocore.exceptions.ClientError:
             LOG.exception('Could not call Lambda function %s', self.func_name)
             raise
+
+    def list(self):
+        data = {'operation': 'list'}
+        return self.invoke(data)
+
+    def get(self, item_id, decrypt=False):
+        data = {'operation': 'get',
+                'id': item_id,
+                'decrypt': decrypt}
+        return self.invoke(data)
+
+    def create(self, item):
+        data = {'operation': 'create',
+                'item': item}
+        return self.invoke(data)
+
+    def delete(self, item_id):
+        data = {'operation': 'get',
+                'id': item_id}
+        return self.invoke(data)
+
+    def search(self, query):
+        data = {'operation': 'search',
+                'query': query}
+        return self.invoke(data)
+
+    def increment(self, item_id, counter_name, increment=1):
+        data = {'operation': 'increment_counter',
+                'id': item_id,
+                'counter_name': counter_name,
+                'increment': increment}
+        return self.invoke(data)
+    
