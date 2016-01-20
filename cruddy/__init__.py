@@ -296,18 +296,12 @@ class CRUD(object):
         operation = operation.lower()
         self._check_supported_op(operation, response)
         if response.status == 'success':
-            if operation == 'list':
-                response = self.list(**kwargs)
-            elif operation == 'get':
-                response = self.get(**kwargs)
-            elif operation == 'create':
-                response = self.create(**kwargs)
-            elif operation == 'update':
-                response = self.update(**kwargs)
-            elif operation == 'delete':
-                response = self.delete(**kwargs)
-            elif operation == 'search':
-                response = self.search(**kwargs)
-            elif operation == 'increment_counter':
-                response = self.increment_counter(**kwargs)
+            method = getattr(self, operation, None)
+            if callable(method):
+                response = method(**kwargs)
+            else:
+                response.status == 'error'
+                response.error_type = 'NotImplemented'
+                msg = 'Operation: {} is not implemented'.format(operation)
+                response.error_message = msg
         return response
