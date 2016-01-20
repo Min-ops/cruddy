@@ -60,6 +60,14 @@ class LambdaClient(object):
             LOG.exception('Could not call Lambda function %s', self.func_name)
             raise
 
+    def call_operation(self, operation, **kwargs):
+        """
+        A generic method to call any operation supported by the Lambda handler
+        """
+        data = {'operation': operation}
+        data.update(kwargs)
+        return self.invoke(data)
+
     def describe(self, **kwargs):
         data = {'operation': 'describe'}
         data.update(kwargs)
