@@ -15,6 +15,7 @@
 import logging
 import decimal
 import base64
+import copy
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -54,15 +55,16 @@ class CRUD(object):
         * debug - if not False this will cause the raw_response to be left
           in the response dictionary
         """
-        table_name = kwargs['table_name']
+        self.table_name = kwargs['table_name']
         profile_name = kwargs.get('profile_name')
         region_name = kwargs.get('region_name')
         placebo = kwargs.get('placebo')
         placebo_dir = kwargs.get('placebo_dir')
         placebo_mode = kwargs.get('placebo_mode', 'record')
-        self._prototype_handler = PrototypeHandler(
-            kwargs.get('prototype', dict()))
+        self.prototype = kwargs.get('prototype', dict())
+        self._prototype_handler = PrototypeHandler(self.prototype)
         self.supported_ops = kwargs.get('supported_ops', self.SupportedOps)
+        self.supported_ops.append('describe')
         self.encrypted_attributes = kwargs.get('encrypted_attributes', list())
         session = boto3.Session(profile_name=profile_name,
                                 region_name=region_name)
@@ -75,7 +77,7 @@ class CRUD(object):
         else:
             self.pill = None
         ddb_resource = session.resource('dynamodb')
-        self.table = ddb_resource.Table(table_name)
+        self.table = ddb_resource.Table(self.table_name)
         self._indexes = {}
         self._analyze_table()
         self._debug = kwargs.get('debug', False)
@@ -164,6 +166,16 @@ class CRUD(object):
 
     def _new_response(self):
         return CRUDResponse(self._debug)
+
+    def describe(self, **kwargs):
+        response = self._new_response()
+        description = {
+            'table_name': self.table_name,
+            'supported_operations': copy.copy(self.supported_ops),
+            'prototype': copy.deepcopy(self.prototype)
+        }
+        response.data = description
+        return response
 
     def search(self, query, **kwargs):
         response = self._new_response()
