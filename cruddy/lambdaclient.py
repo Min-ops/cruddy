@@ -17,6 +17,8 @@ import json
 import boto3
 import botocore.exceptions
 
+from response import CRUDResponse
+
 LOG = logging.getLogger(__name__)
 
 
@@ -47,7 +49,7 @@ class LambdaClient(object):
                 except ValueError:
                     # Probably a plain text response, or an error...
                     response = payload
-                return response
+                return CRUDResponse(response_data=response)
             else:
                 LOG.error('Call to lambda function %s failed', self.func_name)
                 LOG.error(response.get('FunctionError'))

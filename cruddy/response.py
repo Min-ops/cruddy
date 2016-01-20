@@ -17,15 +17,18 @@ import copy
 
 class CRUDResponse(object):
 
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, response_data=None):
         self._debug = debug
-        self.status = 'success'
-        self.data = None
-        self.error_type = None
-        self.error_code = None
-        self.error_message = None
-        self.raw_response = None
-        self.metadata = None
+        if response_data:
+            self.__dict__.update(response_data)
+        else:
+            self.status = 'success'
+            self.data = None
+            self.error_type = None
+            self.error_code = None
+            self.error_message = None
+            self.raw_response = None
+            self.metadata = None
 
     def __repr__(self):
         return 'Status: {}'.format(self.status)

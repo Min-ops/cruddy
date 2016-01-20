@@ -165,7 +165,7 @@ class CRUD(object):
     def _new_response(self):
         return CRUDResponse(self._debug)
 
-    def search(self, query):
+    def search(self, query, **kwargs):
         response = self._new_response()
         if self._check_supported_op('search', response):
             if '=' not in query:
@@ -191,7 +191,7 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def list(self):
+    def list(self, **kwargs):
         response = self._new_response()
         if self._check_supported_op('list', response):
             self._call_ddb_method(self.table.scan, {}, response)
@@ -201,7 +201,9 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def get(self, id, decrypt=False, id_name='id'):
+    def get(self, id, **kwargs):
+        decrypt = kwargs.get('decrypt', False)
+        id_name = kwargs.get('id_name', 'id')
         response = self._new_response()
         if self._check_supported_op('get', response):
             if id is None:
@@ -219,10 +221,15 @@ class CRUD(object):
                         if decrypt:
                             self._decrypt(item)
                         response.data = self._replace_decimals(item)
+                    else:
+                        response.status = 'error'
+                        response.error_type = 'NotFound'
+                        msg = 'item ({}) not found'.format(id)
+                        response.error_message = msg
         response.prepare()
         return response
 
-    def create(self, item):
+    def create(self, item, **kwargs):
         response = self._new_response()
         if self._prototype_handler.check(item, 'create', response):
             self._encrypt(item)
@@ -234,7 +241,7 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def update(self, item):
+    def update(self, item, **kwargs):
         response = self._new_response()
         if self._check_supported_op('update', response):
             if self._prototype_handler.check(item, 'update', response):
@@ -247,7 +254,9 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def increment_counter(self, id, counter_name, increment=1, id_name='id'):
+    def increment_counter(self, id, counter_name, **kwargs):
+        increment = kwargs.get('increment', 1)
+        id_name = kwargs.get('id_name', 'id')
         response = self._new_response()
         if self._check_supported_op('increment_counter', response):
             params = {
@@ -267,7 +276,8 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def delete(self, id, id_name='id'):
+    def delete(self, id, **kwargs):
+        id_name = kwargs.get('id_name', 'id')
         response = self._new_response()
         if self._check_supported_op('delete', response):
             params = {'Key': {id_name: id}}
@@ -287,55 +297,17 @@ class CRUD(object):
         self._check_supported_op(operation, response)
         if response.status == 'success':
             if operation == 'list':
-                response = self.list()
+                response = self.list(**kwargs)
             elif operation == 'get':
-                if 'id' in kwargs:
-                    decrypt = kwargs.get('decrypt', False)
-                    response = self.get(kwargs['id'], decrypt)
-                else:
-                    response.status == 'error'
-                    response.error_type = 'MissingParameter'
-                    response.error_message = 'get operation requires an id'
+                response = self.get(**kwargs)
             elif operation == 'create':
-                if 'item' in kwargs:
-                    response = self.create(kwargs['item'])
-                else:
-                    response.status == 'error'
-                    response.error_type = 'MissingParameter'
-                    msg = 'create operation requires an item'
-                    response.error_message = msg
+                response = self.create(**kwargs)
             elif operation == 'update':
-                if 'item' in kwargs:
-                    response = self.update(kwargs['item'])
-                else:
-                    response.status == 'error'
-                    response.error_type = 'MissingParameter'
-                    msg = 'update operation requires an item'
-                    response.error_message = msg
+                response = self.update(**kwargs)
             elif operation == 'delete':
-                if 'id' in kwargs:
-                    response = self.delete(kwargs['id'])
-                else:
-                    response.status == 'error'
-                    response.error_type = 'MissingParameter'
-                    response.error_message = 'delete operation requires an id'
                 response = self.delete(**kwargs)
             elif operation == 'search':
-                if 'query' in kwargs:
-                    response = self.search(kwargs['query'])
-                else:
-                    response.status == 'error'
-                    response.error_type = 'MissingParameter'
-                    msg = 'query operation requires a query parameter'
-                    response.error_message = msg
+                response = self.search(**kwargs)
             elif operation == 'increment_counter':
-                if 'id' in kwargs and 'counter_name' in kwargs:
-                    increment = kwargs.get('increment', 1)
-                    response = self.increment_counter(
-                        kwargs['id'], kwargs['counter_name'], increment)
-                else:
-                    response.status == 'error'
-                    response.error_type = 'MissingParameter'
-                    msg = 'increment_counter requires an item and a counter_name'
-                    response.error_message = msg
+                response = self.increment_counter(**kwargs)
         return response
