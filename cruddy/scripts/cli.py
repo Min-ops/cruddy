@@ -55,7 +55,7 @@ class CLIHandler(object):
         elif self.crud:
             self._invoke_cruddy(payload)
         else:
-            msg = 'You must specify either --lambda-fn or --config-file'
+            msg = 'You must specify either --lambda-fn or --config'
             click.echo(click.style(msg, fg='red'))
 
 pass_handler = click.make_pass_decorator(CLIHandler)
@@ -74,7 +74,7 @@ pass_handler = click.make_pass_decorator(CLIHandler)
     '--lambda-fn',
     help='AWS Lambda controller name')
 @click.option(
-    '--config-file',
+    '--config',
     help='cruddy config file', type=click.File('rb'))
 @click.option(
     '--debug/--no-debug',
@@ -83,12 +83,12 @@ pass_handler = click.make_pass_decorator(CLIHandler)
 )
 @click.version_option('0.10.0')
 @click.pass_context
-def cli(ctx, profile, region, lambda_fn, config_file, debug):
+def cli(ctx, profile, region, lambda_fn, config, debug):
     """
     cruddy is a CLI interface to the cruddy handler.  It can be used in one
     of two ways.
 
-    First, you can pass in a ``--config-file`` option which is a JSON file
+    First, you can pass in a ``--config`` option which is a JSON file
     containing all of your cruddy parameters and the CLI will create a cruddy
     handler to manipulate the DynamoDB table directly.
 
@@ -97,7 +97,7 @@ def cli(ctx, profile, region, lambda_fn, config_file, debug):
     case the CLI will call the Lambda function to make the changes in the
     underlying DynamoDB table.
     """
-    ctx.obj = CLIHandler(profile, region, lambda_fn, config_file, debug)
+    ctx.obj = CLIHandler(profile, region, lambda_fn, config, debug)
 
 
 @cli.command()
