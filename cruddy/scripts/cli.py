@@ -81,7 +81,7 @@ pass_handler = click.make_pass_decorator(CLIHandler)
     default=False,
     help='Turn on debugging output'
 )
-@click.version_option('0.11.0')
+@click.version_option('0.11.1')
 @click.pass_context
 def cli(ctx, profile, region, lambda_fn, config, debug):
     """

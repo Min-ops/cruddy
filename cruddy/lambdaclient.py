@@ -82,8 +82,9 @@ class LambdaClient(object):
         id_name = kwargs.get('id_name', 'id')
         decrypt = kwargs.get('decrypt', False)
         data = {'operation': 'get',
-                id_name: item_id,
-                'decrypt': decrypt}
+                id_name: item_id}
+        if decrypt:
+            data['decrypt'] = decrypt
         data.update(kwargs)
         return self.invoke(data)
 
