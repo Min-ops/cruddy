@@ -17,6 +17,8 @@ import json
 import boto3
 import botocore.exceptions
 
+from response import CRUDResponse
+
 LOG = logging.getLogger(__name__)
 
 
@@ -47,7 +49,8 @@ class LambdaClient(object):
                 except ValueError:
                     # Probably a plain text response, or an error...
                     response = payload
-                return response
+                    print(response)
+                return CRUDResponse(response_data=response)
             else:
                 LOG.error('Call to lambda function %s failed', self.func_name)
                 LOG.error(response.get('FunctionError'))
@@ -57,34 +60,58 @@ class LambdaClient(object):
             LOG.exception('Could not call Lambda function %s', self.func_name)
             raise
 
-    def list(self):
-        data = {'operation': 'list'}
+    def call_operation(self, operation, **kwargs):
+        """
+        A generic method to call any operation supported by the Lambda handler
+        """
+        data = {'operation': operation}
+        data.update(kwargs)
         return self.invoke(data)
 
-    def get(self, item_id, decrypt=False, id_name='id'):
+    def describe(self, **kwargs):
+        data = {'operation': 'describe'}
+        data.update(kwargs)
+        return self.invoke(data)
+
+    def list(self, **kwargs):
+        data = {'operation': 'list'}
+        data.update(kwargs)
+        return self.invoke(data)
+
+    def get(self, item_id, **kwargs):
+        id_name = kwargs.get('id_name', 'id')
+        decrypt = kwargs.get('decrypt', False)
         data = {'operation': 'get',
                 id_name: item_id,
                 'decrypt': decrypt}
+        data.update(kwargs)
         return self.invoke(data)
 
-    def create(self, item):
+    def create(self, item, **kwargs):
         data = {'operation': 'create',
                 'item': item}
+        data.update(kwargs)
         return self.invoke(data)
 
-    def delete(self, item_id, id_name='id'):
+    def delete(self, item_id, **kwargs):
+        id_name = kwargs.get('id_name', 'id')
         data = {'operation': 'get',
                 id_name: item_id}
+        data.update(kwargs)
         return self.invoke(data)
 
-    def search(self, query):
+    def search(self, query, **kwargs):
         data = {'operation': 'search',
                 'query': query}
+        data.update(kwargs)
         return self.invoke(data)
 
-    def increment(self, item_id, counter_name, increment=1, id_name='id'):
+    def increment(self, item_id, counter_name, **kwargs):
+        id_name = kwargs.get('id_name', 'id')
+        increment = kwargs.get('increment', 1)
         data = {'operation': 'increment_counter',
                 id_name: item_id,
                 'counter_name': counter_name,
                 'increment': increment}
+        data.update(kwargs)
         return self.invoke(data)

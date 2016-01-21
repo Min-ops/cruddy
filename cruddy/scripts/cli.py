@@ -33,29 +33,21 @@ class CLIHandler(object):
             self.crud = CRUD(**config)
         self.debug = debug
 
+    def _handle_response(self, response):
+        if response.status == 'success':
+            click.echo(json.dumps(response.data, indent=4))
+        else:
+            click.echo(click.style(response.status, fg='red'))
+            click.echo(click.style(response.error_type, fg='red'))
+            click.echo(click.style(response.error_message, fg='red'))
+
     def _invoke_lambda(self, payload):
         response = self.lambda_client.invoke(payload)
-        if self.debug:
-            click.echo(click.style('CRUD Response', fg='green'))
-            click.echo(response)
-        if 'status' not in response:
-            click.echo(click.style('Something is very wrong', fg='red'))
-            click.echo(response)
-        elif response['status'] == 'success':
-            click.echo(json.dumps(response['data'], indent=4))
-        else:
-            click.echo(click.style(response['status'], fg='red'))
-            click.echo(click.style(response['error_type'], fg='red'))
-            click.echo(click.style(response['error_message'], fg='red'))
+        self._handle_response(response)
 
     def _invoke_cruddy(self, payload):
-        crud_response = self.crud.handler(**payload)
-        if crud_response.status == 'success':
-            click.echo(json.dumps(crud_response.data, indent=4))
-        else:
-            click.echo(click.style(crud_response.status, fg='red'))
-            click.echo(click.style(crud_response.error_type, fg='red'))
-            click.echo(click.style(crud_response.error_message, fg='red'))
+        response = self.crud.handler(**payload)
+        self._handle_response(response)
 
     def invoke(self, payload):
         if self.lambda_fn:
@@ -63,7 +55,7 @@ class CLIHandler(object):
         elif self.crud:
             self._invoke_cruddy(payload)
         else:
-            msg = 'You must specify either --lambda-fn or --config-file'
+            msg = 'You must specify either --lambda-fn or --config'
             click.echo(click.style(msg, fg='red'))
 
 pass_handler = click.make_pass_decorator(CLIHandler)
@@ -82,7 +74,7 @@ pass_handler = click.make_pass_decorator(CLIHandler)
     '--lambda-fn',
     help='AWS Lambda controller name')
 @click.option(
-    '--config-file',
+    '--config',
     help='cruddy config file', type=click.File('rb'))
 @click.option(
     '--debug/--no-debug',
@@ -91,12 +83,12 @@ pass_handler = click.make_pass_decorator(CLIHandler)
 )
 @click.version_option('0.10.0')
 @click.pass_context
-def cli(ctx, profile, region, lambda_fn, config_file, debug):
+def cli(ctx, profile, region, lambda_fn, config, debug):
     """
     cruddy is a CLI interface to the cruddy handler.  It can be used in one
     of two ways.
 
-    First, you can pass in a ``--config-file`` option which is a JSON file
+    First, you can pass in a ``--config`` option which is a JSON file
     containing all of your cruddy parameters and the CLI will create a cruddy
     handler to manipulate the DynamoDB table directly.
 
@@ -105,7 +97,15 @@ def cli(ctx, profile, region, lambda_fn, config_file, debug):
     case the CLI will call the Lambda function to make the changes in the
     underlying DynamoDB table.
     """
-    ctx.obj = CLIHandler(profile, region, lambda_fn, config_file, debug)
+    ctx.obj = CLIHandler(profile, region, lambda_fn, config, debug)
+
+
+@cli.command()
+@pass_handler
+def describe(handler):
+    """Describe the cruddy handler"""
+    data = {'operation': 'describe'}
+    handler.invoke(data)
 
 
 @cli.command()
