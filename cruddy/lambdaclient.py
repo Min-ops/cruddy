@@ -93,6 +93,12 @@ class LambdaClient(object):
         data.update(kwargs)
         return self.invoke(data)
 
+    def update(self, item, **kwargs):
+        data = {'operation': 'update',
+                'item': item}
+        data.update(kwargs)
+        return self.invoke(data)
+
     def delete(self, item_id, **kwargs):
         id_name = kwargs.get('id_name', 'id')
         data = {'operation': 'get',
