@@ -102,7 +102,7 @@ class LambdaClient(object):
 
     def delete(self, item_id, **kwargs):
         id_name = kwargs.get('id_name', 'id')
-        data = {'operation': 'get',
+        data = {'operation': 'delete',
                 id_name: item_id}
         data.update(kwargs)
         return self.invoke(data)
