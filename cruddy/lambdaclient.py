@@ -68,8 +68,18 @@ class LambdaClient(object):
         data.update(kwargs)
         return self.invoke(data)
 
+    def ping(self, **kwargs):
+        data = {'operation': 'describe'}
+        data.update(kwargs)
+        return self.invoke(data)
+
     def describe(self, **kwargs):
         data = {'operation': 'describe'}
+        data.update(kwargs)
+        return self.invoke(data)
+
+    def help(self, **kwargs):
+        data = {'operation': 'help'}
         data.update(kwargs)
         return self.invoke(data)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 from setuptools import setup, find_packages
 
 requires = [
@@ -10,7 +11,7 @@ requires = [
 
 setup(
     name='cruddy',
-    version='0.11.2',
+    version=open(os.path.join('cruddy', '_version')).read().strip(),
     description='A CRUD wrapper class for Amazon DynamoDB',
     long_description=open('README.md').read(),
     author='Mitch Garnaat',
