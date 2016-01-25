@@ -38,7 +38,7 @@ class CRUD(object):
 
     SupportedOps = ["create", "update", "get", "delete",
                     "list", "search", "increment_counter",
-                    "describe", "help", "ping"]
+                    "describe", "ping"]
 
     def __init__(self, **kwargs):
         """
@@ -213,66 +213,6 @@ class CRUD(object):
                 description['operations'][name] = method_info
         response.data = description
         return response
-
-    def _build_signature_line(self, method_name, argspec):
-        arg_len = len(argspec['args'])
-        if argspec['defaults']:
-            defaults_offset = arg_len - len(argspec['defaults'])
-        else:
-            defaults_offset = 0
-        signature = '**{}**('.format(method_name)
-        params = []
-        for i in range(0, arg_len):
-            param_string = argspec['args'][i]
-            if argspec['defaults'] is not None:
-                if i >= defaults_offset:
-                    print(argspec['defaults'])
-                    print(i)
-                    print(defaults_offset)
-                    param_string += '={}'.format(
-                        argspec['defaults'][i - defaults_offset])
-            params.append(param_string)
-        signature += ', '.join(params)
-        signature += ')'
-        return signature
-
-    def help(self):
-        """
-        Returns a Markdown document that describes this handler and
-        it's operations.
-        """
-        response = self.describe()
-        description = response.data
-        lines = []
-        lines.append('# {}'.format(self.__class__.__name__))
-        lines.append('## Handler Info')
-        lines.append('**Cruddy version**: {}'.format(
-            description['cruddy_version']))
-        lines.append('')
-        lines.append('**Table name**: {}'.format(description['table_name']))
-        lines.append('')
-        lines.append('**Supported operations**:')
-        lines.append('')
-        for op in description['supported_operations']:
-            lines.append('* {}'.format(op))
-        lines.append('')
-        lines.append('**Prototype**:')
-        lines.append('')
-        lines.append('```')
-        lines.append(str(description['prototype']))
-        lines.append('```')
-        lines.append('')
-        lines.append('## Operations')
-        for op_name in description['operations']:
-            op = description['operations'][op_name]
-            lines.append('### {}'.format(op_name))
-            lines.append('')
-            lines.append(self._build_signature_line(
-                op_name, description['operations'][op_name]['argspec']))
-            lines.append('')
-            lines.append(op['docs'])
-            lines.append('')
-        return '\n'.join(lines)
 
     def search(self, query, **kwargs):
         """

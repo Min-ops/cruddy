@@ -18,6 +18,7 @@ setup(
     author_email='mitch@cloudnative.io',
     url='https://github.com/cloudnative/cruddy',
     packages=find_packages(exclude=['tests*']),
+    package_data={'cruddy': ['_version']},
     entry_points="""
         [console_scripts]
         cruddy=cruddy.scripts.cli:cli
