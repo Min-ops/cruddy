@@ -41,19 +41,23 @@ class CLIHandler(object):
             click.echo(click.style(response.error_type, fg='red'))
             click.echo(click.style(response.error_message, fg='red'))
 
-    def _invoke_lambda(self, payload):
+    def _invoke_lambda(self, payload, raw):
         response = self.lambda_client.invoke(payload)
+        if raw:
+            return response
         self._handle_response(response)
 
-    def _invoke_cruddy(self, payload):
+    def _invoke_cruddy(self, payload, raw):
         response = self.crud.handler(**payload)
+        if raw:
+            return response
         self._handle_response(response)
 
-    def invoke(self, payload):
+    def invoke(self, payload, raw=False):
         if self.lambda_fn:
-            self._invoke_lambda(payload)
+            return self._invoke_lambda(payload, raw)
         elif self.crud:
-            self._invoke_cruddy(payload)
+            return self._invoke_cruddy(payload, raw)
         else:
             msg = 'You must specify either --lambda-fn or --config'
             click.echo(click.style(msg, fg='red'))
@@ -183,6 +187,71 @@ def update(handler, item_document):
     data = {'operation': 'update',
             'item': json.load(item_document)}
     handler.invoke(data)
+
+
+def _build_signature_line(method_name, argspec):
+    arg_len = len(argspec['args'])
+    if argspec['defaults']:
+        defaults_offset = arg_len - len(argspec['defaults'])
+    else:
+        defaults_offset = 0
+    signature = '**{}**('.format(method_name)
+    params = []
+    for i in range(0, arg_len):
+        param_string = argspec['args'][i]
+        if argspec['defaults'] is not None:
+            if i >= defaults_offset:
+                param_string += '={}'.format(
+                    argspec['defaults'][i - defaults_offset])
+        params.append(param_string)
+    signature += ', '.join(params)
+    signature += ')'
+    return signature
+
+
+@cli.command()
+@pass_handler
+def help(handler):
+    """
+    Returns a Markdown document that describes this handler and
+    it's operations.
+    """
+    data = {'operation': 'describe'}
+    response = handler.invoke(data, raw=True)
+    description = response.data
+    lines = []
+    lines.append('# {}'.format(handler.lambda_fn))
+    lines.append('## Handler Info')
+    lines.append('**Cruddy version**: {}'.format(
+        description['cruddy_version']))
+    lines.append('')
+    lines.append('**Table name**: {}'.format(description['table_name']))
+    lines.append('')
+    lines.append('**Supported operations**:')
+    lines.append('')
+    for op in description['supported_operations']:
+        lines.append('* {}'.format(op))
+    lines.append('')
+    lines.append('**Prototype**:')
+    lines.append('')
+    lines.append('```')
+    lines.append(str(description['prototype']))
+    lines.append('```')
+    lines.append('')
+    lines.append('## Operations')
+    for op_name in description['operations']:
+        op = description['operations'][op_name]
+        lines.append('### {}'.format(op_name))
+        lines.append('')
+        lines.append(_build_signature_line(
+            op_name, description['operations'][op_name]['argspec']))
+        lines.append('')
+        if op['docs'] is None:
+            lines.append('')
+        else:
+            lines.append(op['docs'])
+        lines.append('')
+    click.echo('\n'.join(lines))
 
 
 if __name__ == '__main__':
