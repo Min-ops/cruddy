@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import logging
 import decimal
 import base64
 import copy
+import inspect
 
 import boto3
 from boto3.dynamodb.conditions import Key
@@ -25,6 +27,9 @@ from cruddy.prototype import PrototypeHandler
 from cruddy.response import CRUDResponse
 from cruddy.exceptions import CruddyKeySchemaError, CruddyKeyNameError
 
+__version__ = open(os.path.join(os.path.dirname(__file__),
+                                '_version')).read().strip()
+
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
@@ -32,7 +37,8 @@ LOG.setLevel(logging.INFO)
 class CRUD(object):
 
     SupportedOps = ["create", "update", "get", "delete",
-                    "list", "search", "increment_counter"]
+                    "list", "search", "increment_counter",
+                    "describe", "help", "ping"]
 
     def __init__(self, **kwargs):
         """
@@ -47,7 +53,8 @@ class CRUD(object):
         * prototype - a dictionary of name/value pairs that will be used to
           initialize newly created items
         * supported_ops - a list of operations supported by the CRUD handler
-          (choices are list, get, create, update, delete)
+          (choices are list, get, create, update, delete, search,
+          increment_counter, describe, help, ping)
         * encrypted_attributes - a list of tuples where the first item in the
           tuple is the name of the attribute that should be encrypted and the
           second item in the tuple is the KMS master key ID to use for
@@ -167,17 +174,130 @@ class CRUD(object):
     def _new_response(self):
         return CRUDResponse(self._debug)
 
+    def ping(self, **kwargs):
+        """
+        A no-op method that simply returns a successful response.
+        """
+        response = self._new_response()
+        return response
+
     def describe(self, **kwargs):
+        """
+        Returns descriptive information about this cruddy handler and the
+        methods supported by it.
+        """
         response = self._new_response()
         description = {
+            'cruddy_version': __version__,
             'table_name': self.table_name,
             'supported_operations': copy.copy(self.supported_ops),
-            'prototype': copy.deepcopy(self.prototype)
+            'prototype': copy.deepcopy(self.prototype),
+            'operations': {}
         }
+        for name, method in inspect.getmembers(self, inspect.ismethod):
+            if not name.startswith('_'):
+                argspec = inspect.getargspec(method)
+                if argspec.defaults is None:
+                    defaults = None
+                else:
+                    defaults = list(argspec.defaults)
+                method_info = {
+                    'docs': inspect.getdoc(method),
+                    'argspec': {
+                        'args': argspec.args,
+                        'varargs': argspec.varargs,
+                        'keywords': argspec.keywords,
+                        'defaults': defaults
+                    }
+                }
+                description['operations'][name] = method_info
         response.data = description
         return response
 
+    def _build_signature_line(self, method_name, argspec):
+        arg_len = len(argspec['args'])
+        if argspec['defaults']:
+            defaults_offset = arg_len - len(argspec['defaults'])
+        else:
+            defaults_offset = 0
+        signature = '**{}**('.format(method_name)
+        params = []
+        for i in range(0, arg_len):
+            param_string = argspec['args'][i]
+            if argspec['defaults'] is not None:
+                if i >= defaults_offset:
+                    print(argspec['defaults'])
+                    print(i)
+                    print(defaults_offset)
+                    param_string += '={}'.format(
+                        argspec['defaults'][i - defaults_offset])
+            params.append(param_string)
+        signature += ', '.join(params)
+        signature += ')'
+        return signature
+
+    def help(self):
+        """
+        Returns a Markdown document that describes this handler and
+        it's operations.
+        """
+        response = self.describe()
+        description = response.data
+        lines = []
+        lines.append('# {}'.format(self.__class__.__name__))
+        lines.append('## Handler Info')
+        lines.append('**Cruddy version**: {}'.format(
+            description['cruddy_version']))
+        lines.append('')
+        lines.append('**Table name**: {}'.format(description['table_name']))
+        lines.append('')
+        lines.append('**Supported operations**:')
+        lines.append('')
+        for op in description['supported_operations']:
+            lines.append('* {}'.format(op))
+        lines.append('')
+        lines.append('**Prototype**:')
+        lines.append('')
+        lines.append('```')
+        lines.append(str(description['prototype']))
+        lines.append('```')
+        lines.append('')
+        lines.append('## Operations')
+        for op_name in description['operations']:
+            op = description['operations'][op_name]
+            lines.append('### {}'.format(op_name))
+            lines.append('')
+            lines.append(self._build_signature_line(
+                op_name, description['operations'][op_name]['argspec']))
+            lines.append('')
+            lines.append(op['docs'])
+            lines.append('')
+        return '\n'.join(lines)
+
     def search(self, query, **kwargs):
+        """
+        Cruddy provides a limited but useful interface to search GSI indexes in
+        DynamoDB with the following limitations (hopefully some of these will
+        be expanded or eliminated in the future.
+
+        * The GSI must be configured with a only HASH and not a RANGE.
+        * The only operation supported in the query is equality
+
+        To use the ``search`` operation you must pass in a query string of this
+        form:
+
+            <attribute_name>=<value>
+
+        As stated above, the only operation currently supported is equality (=)
+        but other operations will be added over time.  Also, the
+        ``attribute_name`` must be an attribute which is configured as the
+        ``HASH`` of a GSI in the DynamoDB table.  If all of the above
+        conditions are met, the ``query`` operation will return a list
+        (possibly empty) of all items matching the query and the ``status`` of
+        the response will be ``success``.  Otherwise, the ``status`` will be
+        ``error`` and the ``error_type`` and ``error_message`` will provide
+        further information about the error.
+        """
         response = self._new_response()
         if self._check_supported_op('search', response):
             if '=' not in query:
@@ -204,6 +324,10 @@ class CRUD(object):
         return response
 
     def list(self, **kwargs):
+        """
+        Returns a list of items in the database.  Encrypted attributes are not
+        decrypted when listing items.
+        """
         response = self._new_response()
         if self._check_supported_op('list', response):
             self._call_ddb_method(self.table.scan, {}, response)
@@ -213,9 +337,14 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def get(self, id, **kwargs):
-        decrypt = kwargs.get('decrypt', False)
-        id_name = kwargs.get('id_name', 'id')
+    def get(self, id, decrypt=False, id_name='id', **kwargs):
+        """
+        Returns the item corresponding to ``id``.  If the ``decrypt`` param is
+        not False (the default) any encrypted attributes in the item will be
+        decrypted before the item is returned.  If not, the encrypted
+        attributes will contain the encrypted value.
+
+        """
         response = self._new_response()
         if self._check_supported_op('get', response):
             if id is None:
@@ -242,6 +371,11 @@ class CRUD(object):
         return response
 
     def create(self, item, **kwargs):
+        """
+        Creates a new item.  You pass in an item containing initial values.
+        Any attribute names defined in ``prototype`` that are missing from the
+        item will be added using the default value defined in ``prototype``.
+        """
         response = self._new_response()
         if self._prototype_handler.check(item, 'create', response):
             self._encrypt(item)
@@ -254,6 +388,10 @@ class CRUD(object):
         return response
 
     def update(self, item, **kwargs):
+        """
+        Updates the item based on the current values of the dictionary passed
+        in.
+        """
         response = self._new_response()
         if self._check_supported_op('update', response):
             if self._prototype_handler.check(item, 'update', response):
@@ -266,9 +404,13 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def increment_counter(self, id, counter_name, **kwargs):
-        increment = kwargs.get('increment', 1)
-        id_name = kwargs.get('id_name', 'id')
+    def increment_counter(self, id, counter_name, increment=1,
+                          id_name='id', **kwargs):
+        """
+        Atomically increments a counter attribute in the item identified by
+        ``id``.  You must specify the name of the attribute as ``counter_name``
+        and, optionally, the ``increment`` which defaults to ``1``.
+        """
         response = self._new_response()
         if self._check_supported_op('increment_counter', response):
             params = {
@@ -288,8 +430,12 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def delete(self, id, **kwargs):
-        id_name = kwargs.get('id_name', 'id')
+    def delete(self, id, id_name='id', **kwargs):
+        """
+        delete(*id*)
+
+        Deletes the item corresponding to ``id``.
+        """
         response = self._new_response()
         if self._check_supported_op('delete', response):
             params = {'Key': {id_name: id}}
@@ -299,6 +445,23 @@ class CRUD(object):
         return response
 
     def handler(self, operation=None, **kwargs):
+        """
+        In addition to the methods described above, cruddy also provides a
+        generic handler interface.  This is mainly useful when you want to wrap
+        a cruddy handler in a Lambda function and then call that Lambda
+        function to access the CRUD capabilities.
+
+        To call the handler, you simply put all necessary parameters into a
+        Python dictionary and then call the handler with that dict.
+
+        ```
+        params = {
+            'operation': 'create',
+            'item': {'foo': 'bar', 'fie': 'baz'}
+        }
+        response = crud.handler(**params)
+        ```
+        """
         response = self._new_response()
         if operation is None:
             response.status = 'error'
