@@ -25,7 +25,6 @@ from botocore.exceptions import ClientError
 
 from cruddy.prototype import PrototypeHandler
 from cruddy.response import CRUDResponse
-from cruddy.exceptions import CruddyKeySchemaError, CruddyKeyNameError
 
 __version__ = open(os.path.join(os.path.dirname(__file__),
                                 '_version')).read().strip()
@@ -36,7 +35,7 @@ LOG.setLevel(logging.INFO)
 
 class CRUD(object):
 
-    SupportedOps = ["create", "update", "get", "delete",
+    SupportedOps = ["create", "update", "get", "delete", "bulk_delete",
                     "list", "search", "increment_counter",
                     "describe", "ping"]
 
@@ -96,11 +95,9 @@ class CRUD(object):
     def _analyze_table(self):
         # First check the Key Schema
         if len(self.table.key_schema) != 1:
-            msg = 'cruddy does not support RANGE keys'
-            raise CruddyKeySchemaError(msg)
-        if self.table.key_schema[0]['AttributeName'] != 'id':
-            msg = 'cruddy expects the HASH to be id'
-            raise CruddyKeyNameError(msg)
+            LOG.info('cruddy does not support RANGE keys')
+        else:
+            self._indexes[self.table.key_schema[0]['AttributeName']] = None
         # Now process any GSI's
         if self.table.global_secondary_indexes:
             for gsi in self.table.global_secondary_indexes:
@@ -253,8 +250,13 @@ class CRUD(object):
                     msg = 'Attribute {} is not indexed'.format(key)
                     response.error_message = msg
                 else:
-                    params = {'KeyConditionExpression': Key(key).eq(value),
-                              'IndexName': self._indexes[key]}
+                    params = {'KeyConditionExpression': Key(key).eq(value)}
+                    index_name = self._indexes[key]
+                    if index_name:
+                        params['IndexName'] = index_name
+                    pe = kwargs.get('projection_expression')
+                    if pe:
+                        params['ProjectionExpression'] = pe
                     self._call_ddb_method(self.table.query,
                                           params, response)
                     if response.status == 'success':
@@ -372,8 +374,6 @@ class CRUD(object):
 
     def delete(self, id, id_name='id', **kwargs):
         """
-        delete(*id*)
-
         Deletes the item corresponding to ``id``.
         """
         response = self._new_response()
@@ -382,6 +382,28 @@ class CRUD(object):
             self._call_ddb_method(self.table.delete_item, params, response)
             response.data = 'true'
         response.prepare()
+        return response
+
+    def bulk_delete(self, query, **kwargs):
+        """
+        Perform a search and delete all items that match.
+        """
+        response = self._new_response()
+        if self._check_supported_op('search', response):
+            n = 0
+            pe = 'id'
+            response = self.search(query, projection_expression=pe, **kwargs)
+            while response.status == 'success' and response.data:
+                for item in response.data:
+                    delete_response = self.delete(item['id'])
+                    if response.status != 'success':
+                        response = delete_response
+                        break
+                    n += 1
+                response = self.search(
+                    query, projection_expression=pe, **kwargs)
+            if response.status == 'success':
+                response.data = {'deleted': n}
         return response
 
     def handler(self, operation=None, **kwargs):
