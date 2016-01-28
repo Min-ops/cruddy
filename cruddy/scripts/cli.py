@@ -148,6 +148,16 @@ def delete(handler, item_id):
 @cli.command()
 @click.argument('query', nargs=1)
 @pass_handler
+def bulk_delete(handler, query):
+    """Perform a search and delete all items that match"""
+    data = {'operation': 'bulk_delete',
+            'query': query}
+    handler.invoke(data)
+
+
+@cli.command()
+@click.argument('query', nargs=1)
+@pass_handler
 def search(handler, query):
     """Perform a search"""
     data = {'operation': 'search',

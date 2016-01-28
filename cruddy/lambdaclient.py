@@ -25,13 +25,12 @@ LOG = logging.getLogger(__name__)
 class LambdaClient(object):
 
     def __init__(self, func_name, profile_name=None,
-                 region_name=None, debug=False):
+                 region_name=None, **kwargs):
         self.func_name = func_name
         self._lambda_client = None
         session = boto3.Session(
             profile_name=profile_name, region_name=region_name)
         self._lambda_client = session.client('lambda')
-        self.debug = debug
 
     def invoke(self, payload):
         try:
@@ -114,6 +113,12 @@ class LambdaClient(object):
         id_name = kwargs.get('id_name', 'id')
         data = {'operation': 'delete',
                 id_name: item_id}
+        data.update(kwargs)
+        return self.invoke(data)
+
+    def bulk_delete(self, query, **kwargs):
+        data = {'operation': 'bulk_delete',
+                'query': query}
         data.update(kwargs)
         return self.invoke(data)
 
