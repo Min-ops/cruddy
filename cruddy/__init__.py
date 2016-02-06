@@ -329,7 +329,7 @@ class CRUD(object):
         response.prepare()
         return response
 
-    def update(self, item, **kwargs):
+    def update(self, item, encrypt=True, **kwargs):
         """
         Updates the item based on the current values of the dictionary passed
         in.
@@ -337,7 +337,8 @@ class CRUD(object):
         response = self._new_response()
         if self._check_supported_op('update', response):
             if self._prototype_handler.check(item, 'update', response):
-                self._encrypt(item)
+                if encrypt:
+                    self._encrypt(item)
                 params = {'Item': item}
                 self._call_ddb_method(self.table.put_item,
                                       params, response)

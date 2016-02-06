@@ -190,11 +190,16 @@ def create(handler, item_document):
 
 
 @cli.command()
+@click.option(
+    '--encrypt/--no-encrypt',
+    default=True,
+    help='Encrypt any encrypted attributes')
 @click.argument('item_document', type=click.File('rb'))
 @pass_handler
 def update(handler, item_document):
     """Update an item from a JSON document"""
     data = {'operation': 'update',
+            'encrypt': encrypt,
             'item': json.load(item_document)}
     handler.invoke(data)
 
