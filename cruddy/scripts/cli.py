@@ -136,12 +136,14 @@ def get(handler, item_id, decrypt):
 
 
 @cli.command()
+@click.option('--id-name', default='id', help='Name of id attribute')
 @click.argument('item_id', nargs=1)
 @pass_handler
-def delete(handler, item_id):
+def delete(handler, item_id, id_name):
     """Delete an item"""
     data = {'operation': 'delete',
-            'id': item_id}
+            'id': item_id,
+            'id_name': id_name}
     handler.invoke(data)
 
 

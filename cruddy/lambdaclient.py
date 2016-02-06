@@ -88,12 +88,8 @@ class LambdaClient(object):
         return self.invoke(data)
 
     def get(self, item_id, **kwargs):
-        id_name = kwargs.get('id_name', 'id')
-        decrypt = kwargs.get('decrypt', False)
         data = {'operation': 'get',
-                id_name: item_id}
-        if decrypt:
-            data['decrypt'] = decrypt
+                'id': item_id}
         data.update(kwargs)
         return self.invoke(data)
 
@@ -112,9 +108,8 @@ class LambdaClient(object):
         return self.invoke(data)
 
     def delete(self, item_id, **kwargs):
-        id_name = kwargs.get('id_name', 'id')
         data = {'operation': 'delete',
-                id_name: item_id}
+                'id': item_id}
         data.update(kwargs)
         return self.invoke(data)
 
