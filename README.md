@@ -165,7 +165,7 @@ the ``flatten`` method
  'status': 'success'}
  >>>
  ```
- 
+
 ## CRUD operations
 
 The CRUD object supports the following operations.  Note that depending on the
@@ -190,9 +190,13 @@ Creates a new item.  You pass in an item containing initial values.  Any
 attribute names defined in ``prototype`` that are missing from the item will be
 added using the default value defined in ``prototype``.
 
-### update(*item*)
+### update(*item*, *encrypt=True*)
 
-Updates the item based on the current values of the dictionary passed in.
+Updates the item based on the current values of the dictionary passed in. If
+the ``encrypt`` param is True (the default), encrypted attributes in ``item``
+are encrypted. To prevent double-encrypting when using ``list`` or ``get``
+without ``decrypt=True``, you can specify ``encrypt=False`` and the item will
+be stored verbatim.
 
 ### delete(*id*)
 
@@ -358,4 +362,3 @@ $ cruddy --lambda-fn fiebaz list
 ```
 
 where ``fiebaz`` is the name of your Lambda handler.
-

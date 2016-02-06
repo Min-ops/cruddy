@@ -106,6 +106,8 @@ class LambdaClient(object):
     def update(self, item, **kwargs):
         data = {'operation': 'update',
                 'item': item}
+        encrypt = kwargs.get('encrypt', True)
+        data['encrypt'] = encrypt
         data.update(kwargs)
         return self.invoke(data)
 
