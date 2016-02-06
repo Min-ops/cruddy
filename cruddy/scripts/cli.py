@@ -136,12 +136,14 @@ def get(handler, item_id, decrypt):
 
 
 @cli.command()
+@click.option('--id-name', default='id', help='Name of id attribute')
 @click.argument('item_id', nargs=1)
 @pass_handler
-def delete(handler, item_id):
+def delete(handler, item_id, id_name):
     """Delete an item"""
     data = {'operation': 'delete',
-            'id': item_id}
+            'id': item_id,
+            'id_name': id_name}
     handler.invoke(data)
 
 
@@ -190,11 +192,16 @@ def create(handler, item_document):
 
 
 @cli.command()
+@click.option(
+    '--encrypt/--no-encrypt',
+    default=True,
+    help='Encrypt any encrypted attributes')
 @click.argument('item_document', type=click.File('rb'))
 @pass_handler
 def update(handler, item_document):
     """Update an item from a JSON document"""
     data = {'operation': 'update',
+            'encrypt': encrypt,
             'item': json.load(item_document)}
     handler.invoke(data)
 
