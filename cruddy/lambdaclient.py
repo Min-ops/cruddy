@@ -17,7 +17,7 @@ import json
 import boto3
 import botocore.exceptions
 
-from response import CRUDResponse
+from cruddy.response import CRUDResponse
 
 LOG = logging.getLogger(__name__)
 
