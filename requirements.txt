@@ -1,4 +1,5 @@
-boto3==1.2.3
+botocore==1.12.234
+boto3==1.9.234
 click==6.2
 placebo==0.4.3
 mock==1.3.0
