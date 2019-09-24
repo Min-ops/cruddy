@@ -26,7 +26,7 @@ class LambdaClient(object):
 
     def __init__(self, func_name, profile_name=None,
                  region_name=None, **kwargs):
-        self.func_name = func_name
+        self.__name__ = func_name
         self._lambda_client = None
         session = boto3.Session(
             profile_name=profile_name, region_name=region_name)
@@ -35,7 +35,7 @@ class LambdaClient(object):
     def invoke(self, payload):
         try:
             response = self._lambda_client.invoke(
-                FunctionName=self.func_name,
+                FunctionName=self.__name__,
                 InvocationType='RequestResponse',
                 Payload=json.dumps(payload)
             )
@@ -51,12 +51,12 @@ class LambdaClient(object):
                     print(response)
                 return CRUDResponse(response_data=response)
             else:
-                LOG.error('Call to lambda function %s failed', self.func_name)
+                LOG.error('Call to lambda function %s failed', self.__name__)
                 LOG.error(response.get('FunctionError'))
                 LOG.error(response.get('ResponseMetadata'))
                 return False
         except botocore.exceptions.ClientError:
-            LOG.exception('Could not call Lambda function %s', self.func_name)
+            LOG.exception('Could not call Lambda function %s', self.__name__)
             raise
 
     def call_operation(self, operation, **kwargs):

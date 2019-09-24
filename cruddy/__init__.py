@@ -113,11 +113,11 @@ class CRUD(object):
 
     def _replace_decimals(self, obj):
         if isinstance(obj, list):
-            for i in xrange(len(obj)):
+            for i in range(len(obj)):
                 obj[i] = self._replace_decimals(obj[i])
             return obj
         elif isinstance(obj, dict):
-            for k in obj.iterkeys():
+            for k in obj.keys():
                 obj[k] = self._replace_decimals(obj[k])
             return obj
         elif isinstance(obj, decimal.Decimal):
