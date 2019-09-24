@@ -336,7 +336,7 @@ previous example if we created a file called ``fiebaz.json`` like this:
 We could then reference this when using the cruddy CLI:
 
 ```
-$ cruddy --config-file fiebaz.json list
+$ cruddy --config fiebaz.json list
 [
   {<a listing of all items in fiebaz>}
   ...
